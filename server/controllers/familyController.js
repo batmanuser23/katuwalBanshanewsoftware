@@ -892,6 +892,8 @@ export const getFamilyById = async (req, res) => {
   }
 };
 
+// controllers/familyController.js - UPDATED createFamily with houseNumber handling
+
 export const createFamily = async (req, res) => {
   try {
     const familyData = {
@@ -899,12 +901,50 @@ export const createFamily = async (req, res) => {
       familyPhoto: req.file?.path || null,
     };
 
-    // Validate house exists
-    if (familyData.house) {
-      const house = await House.findById(familyData.house);
+    // ⭐ NEW: Handle house creation/finding by houseNumber
+    let house = null;
+    
+    // Check if houseNumber is provided (from frontend)
+    if (familyData.houseNumber) {
+      // Try to find existing house by houseNumber
+      house = await House.findOne({ houseNumber: familyData.houseNumber });
+      
       if (!house) {
-        return res.status(400).json({ message: 'House not found' });
+        // Create new house with the provided house number and name
+        house = new House({
+          houseNumber: familyData.houseNumber,
+          houseName: familyData.houseName || '',
+          address: familyData.currentAddress || '',
+          district: familyData.district || '',
+          province: familyData.province || '',
+          country: 'Nepal',
+          status: 'active',
+        });
+        await house.save();
+        console.log(`🏠 New house created: ${house.houseNumber}`);
+      } else {
+        console.log(`🏠 Existing house found: ${house.houseNumber}`);
       }
+      
+      // Set the house reference
+      familyData.house = house._id;
+      
+      // Remove houseNumber and houseName from family data (they belong to house)
+      delete familyData.houseNumber;
+      delete familyData.houseName;
+    }
+
+    // Validate house exists
+    if (!familyData.house) {
+      return res.status(400).json({ 
+        message: 'House is required. Please provide a house number.' 
+      });
+    }
+
+    // Validate house exists in database
+    const houseExists = await House.findById(familyData.house);
+    if (!houseExists) {
+      return res.status(400).json({ message: 'House not found' });
     }
 
     const family = new Family(familyData);
@@ -939,6 +979,8 @@ export const createFamily = async (req, res) => {
   }
 };
 
+// controllers/familyController.js - UPDATED updateFamily with houseNumber handling
+
 export const updateFamily = async (req, res) => {
   try {
     const family = await Family.findById(req.params.id);
@@ -953,6 +995,31 @@ export const updateFamily = async (req, res) => {
       });
     }
 
+    const updateData = { ...req.body };
+
+    // ⭐ NEW: Handle house update by houseNumber
+    if (updateData.houseNumber) {
+      let house = await House.findOne({ houseNumber: updateData.houseNumber });
+      
+      if (!house) {
+        house = new House({
+          houseNumber: updateData.houseNumber,
+          houseName: updateData.houseName || '',
+          address: updateData.currentAddress || '',
+          district: updateData.district || '',
+          province: updateData.province || '',
+          country: 'Nepal',
+          status: 'active',
+        });
+        await house.save();
+        console.log(`🏠 New house created: ${house.houseNumber}`);
+      }
+      
+      updateData.house = house._id;
+      delete updateData.houseNumber;
+      delete updateData.houseName;
+    }
+
     if (req.file && family.familyPhoto) {
       const publicId = family.familyPhoto.split('/').pop().split('.')[0];
       await cloudinary.uploader.destroy(publicId).catch(() => {});
@@ -961,7 +1028,7 @@ export const updateFamily = async (req, res) => {
     const updatedFamily = await Family.findByIdAndUpdate(
       req.params.id,
       {
-        ...req.body,
+        ...updateData,
         familyPhoto: req.file?.path || family.familyPhoto,
       },
       { new: true, runValidators: true }

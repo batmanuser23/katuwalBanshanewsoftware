@@ -48,8 +48,9 @@ export const houseValidation = [
     .optional()
     .trim(),
 ];
+// middlewares/validation.js - UPDATED familyValidation
 
-// Family validation
+// Family validation - MODIFIED to accept houseNumber instead of house ID
 export const familyValidation = [
   body('familyName')
     .trim()
@@ -58,9 +59,20 @@ export const familyValidation = [
   body('familyNumber')
     .optional()
     .trim(),
+  // ⭐ CHANGED: house is now optional, houseNumber is required
   body('house')
+    .optional()
     .isMongoId()
     .withMessage('Invalid house ID'),
+  body('houseNumber')
+    .trim()
+    .notEmpty()
+    .withMessage('House number is required')
+    .matches(/^\d+$/)
+    .withMessage('House number must be numeric'),
+  body('houseName')
+    .optional()
+    .trim(),
   body('vanshaGenerationNumber')
     .optional()
     .trim(),
@@ -69,7 +81,6 @@ export const familyValidation = [
     .isIn(['open', 'closed'])
     .withMessage('Invalid status'),
 ];
-
 // Member validation - FIXED phone validation
 export const memberValidation = [
   body('name')

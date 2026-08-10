@@ -136,6 +136,11 @@ const navigation = [
     href: "/donations",
     icon: HeartIcon,
   },
+   {
+    name: "Families",
+    href: "/families",
+    icon: GitBranch,
+  },
   {
     name: "Family Tree",
     href: "/family-tree",
