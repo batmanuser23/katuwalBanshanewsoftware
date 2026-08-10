@@ -1,7 +1,8 @@
-// src/components/FamilyCard.jsx
-import React from 'react';
-import { FaHome, FaUsers, FaTree, FaLock, FaUnlock, FaEye } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+// src/components/FamilyCard.jsx - UPDATED with members list
+
+import React, { useState } from 'react';
+import { FaHome, FaUsers, FaTree, FaLock, FaUnlock, FaEye, FaChevronDown, FaChevronUp, FaUser } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 import Button from './Button';
 
 const FamilyCard = ({ 
@@ -12,10 +13,54 @@ const FamilyCard = ({
   onViewDetails, 
   onClose, 
   onReopen,
+  members = [],
   isAdmin = false,
   className = '' 
 }) => {
   const isClosed = family.status === 'closed';
+  const [expanded, setExpanded] = useState(false);
+
+  // Get family head name
+  const getFamilyHeadName = () => {
+    if (!family.familyHead) return 'N/A';
+    if (typeof family.familyHead === 'object') {
+      return family.familyHead.name || 'N/A';
+    }
+    return family.familyHead;
+  };
+
+  // Get member relationship label in Nepali
+  const getRelationshipLabel = (relationship) => {
+    const labels = {
+      'member': 'सदस्य',
+      'spouse': 'श्रीमान/श्रीमती',
+      'child': 'छोरा/छोरी',
+      'parent': 'बुवा/आमा',
+      'sibling': 'दाजु/भाइ/दिदी/बहिनी',
+      'grandparent': 'हजुरबा/हजुरआमा',
+      'grandchild': 'नाति/नातिनी',
+      'other': 'अन्य'
+    };
+    return labels[relationship] || relationship || 'सदस्य';
+  };
+
+  // Get status badge
+  const getStatusBadge = () => {
+    if (isClosed) {
+      return (
+        <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium flex items-center gap-1">
+          <FaLock className="text-xs" />
+          CLOSED
+        </span>
+      );
+    }
+    return (
+      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium flex items-center gap-1">
+        <FaUnlock className="text-xs" />
+        OPEN
+      </span>
+    );
+  };
 
   return (
     <motion.div
@@ -43,33 +88,20 @@ const FamilyCard = ({
                 {family.familyName || 'Unnamed Family'}
               </h3>
               <div className="flex items-center gap-2 text-sm text-gray-500">
-                <span>House No. {family.house?.houseNumber || 'N/A'}</span>
+                <span>घर नम्बर: {family.house?.houseNumber || 'N/A'}</span>
                 <span>•</span>
-                <span>Family No. {family.familyNumber}</span>
+                <span>वंश नम्बर: {family.familyNumber}</span>
               </div>
             </div>
           </div>
           
-          {/* Status Badge */}
-          <div className="flex items-center gap-2">
-            {isClosed ? (
-              <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium flex items-center gap-1">
-                <FaLock className="text-xs" />
-                CLOSED
-              </span>
-            ) : (
-              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium flex items-center gap-1">
-                <FaUnlock className="text-xs" />
-                OPEN
-              </span>
-            )}
-          </div>
+          {getStatusBadge()}
         </div>
 
         {/* Vansha/Generation */}
         {family.vanshaGenerationNumber && (
           <div className="mt-2 text-sm">
-            <span className="text-gray-500">Vansha/Generation: </span>
+            <span className="text-gray-500">वंश/पुस्ता: </span>
             <span className="font-medium text-gray-800">{family.vanshaGenerationNumber}</span>
           </div>
         )}
@@ -77,10 +109,8 @@ const FamilyCard = ({
         {/* Family Head */}
         {family.familyHead && (
           <div className="mt-1 text-sm">
-            <span className="text-gray-500">Head: </span>
-            <span className="font-medium text-gray-800">
-              {typeof family.familyHead === 'object' ? family.familyHead.name : family.familyHead}
-            </span>
+            <span className="text-gray-500">घरमुली: </span>
+            <span className="font-medium text-gray-800">{getFamilyHeadName()}</span>
           </div>
         )}
 
@@ -95,6 +125,58 @@ const FamilyCard = ({
             <span className="text-sm font-medium text-gray-700">{generationCount || 0} Generations</span>
           </div>
         </div>
+
+        {/* Toggle Members Button */}
+        {members && members.length > 0 && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-2 mt-3 text-sm text-green-600 hover:text-green-700 transition-colors"
+          >
+            {expanded ? <FaChevronUp /> : <FaChevronDown />}
+            {expanded ? 'सदस्यहरू लुकाउनुहोस्' : 'सदस्यहरू हेर्नुहोस्'}
+          </button>
+        )}
+
+        {/* Members List */}
+        <AnimatePresence>
+          {expanded && members && members.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 max-h-48 overflow-y-auto">
+                {members.map((member) => (
+                  <div key={member._id} className="flex items-center gap-2 text-sm py-1 px-2 hover:bg-gray-50 rounded-lg">
+                    <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                      {member.photo ? (
+                        <img 
+                          src={member.photo} 
+                          alt={member.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                          <FaUser className="text-green-600 text-xs" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="font-medium text-gray-700 flex-1">{member.name}</span>
+                    <span className="text-xs text-gray-400">
+                      {member.relationship ? getRelationshipLabel(member.relationship) : 'सदस्य'}
+                    </span>
+                    {member.isAlive === false && (
+                      <span className="text-xs text-red-400">(मृत)</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-100">

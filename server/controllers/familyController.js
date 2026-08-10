@@ -529,7 +529,7 @@
 //   }
 // };
 
-
+// src/controllers/familyController.js
 import Family from '../models/Family.js';
 import House from '../models/House.js';
 import Member from '../models/Member.js';
