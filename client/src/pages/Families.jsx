@@ -1,6 +1,6 @@
-// src/pages/Families.jsx - UPDATED with members in details modal
+// src/pages/Families.jsx - COMPLETE FIXED FILE
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getFamilies, closeFamily, reopenFamily } from '../api/families';
 import { getMembers } from '../api/members';
@@ -22,21 +22,39 @@ const Families = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Fetch families
   const { data, isLoading } = useQuery({
     queryKey: ['families', page, search],
     queryFn: () => getFamilies({ page, limit: 10, search }),
   });
 
-  // Fetch members for each family
-  const { data: membersData } = useQuery({
-    queryKey: ['members-family-tree'],
+  // Fetch ALL members for family grouping
+  const { data: membersData, isLoading: membersLoading } = useQuery({
+    queryKey: ['members-for-families'],
     queryFn: () => getMembers({ limit: 10000 }),
   });
+
+  // Group members by family
+  const membersByFamily = useMemo(() => {
+    if (!membersData?.data) return {};
+    const grouped = {};
+    membersData.data.forEach(member => {
+      const familyId = member.family?._id || member.family;
+      if (familyId) {
+        if (!grouped[familyId]) {
+          grouped[familyId] = [];
+        }
+        grouped[familyId].push(member);
+      }
+    });
+    return grouped;
+  }, [membersData]);
 
   const closeMutation = useMutation({
     mutationFn: ({ id, reason }) => closeFamily(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['families'] });
+      queryClient.invalidateQueries({ queryKey: ['members-for-families'] });
       toast.success('Family closed successfully');
     },
     onError: (error) => {
@@ -48,6 +66,7 @@ const Families = () => {
     mutationFn: (id) => reopenFamily(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['families'] });
+      queryClient.invalidateQueries({ queryKey: ['members-for-families'] });
       toast.success('Family reopened successfully');
     },
     onError: (error) => {
@@ -56,8 +75,7 @@ const Families = () => {
   });
 
   const getFamilyMembers = (familyId) => {
-    if (!membersData?.data) return [];
-    return membersData.data.filter(m => m.family?._id === familyId || m.family === familyId);
+    return membersByFamily[familyId] || [];
   };
 
   const getFamilyMemberCount = (familyId) => {
@@ -65,13 +83,11 @@ const Families = () => {
   };
 
   const getFamilyGenerations = (familyId) => {
-    if (!membersData?.data) return 0;
+    const members = getFamilyMembers(familyId);
     const gens = new Set();
-    membersData.data
-      .filter(m => m.family?._id === familyId || m.family === familyId)
-      .forEach(m => {
-        if (m.generation) gens.add(m.generation);
-      });
+    members.forEach(m => {
+      if (m.generation) gens.add(m.generation);
+    });
     return gens.size;
   };
 
@@ -117,6 +133,14 @@ const Families = () => {
     return labels[relationship] || relationship || 'सदस्य';
   };
 
+  if (isLoading || membersLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -146,11 +170,7 @@ const Families = () => {
       </div>
 
       {/* Family Grid */}
-      {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-        </div>
-      ) : data?.data?.length === 0 ? (
+      {data?.data?.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <FaHome className="text-4xl text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">कुनै परिवार फेला परेन</p>
