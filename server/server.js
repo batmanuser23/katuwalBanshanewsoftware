@@ -23,6 +23,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import draftRoutes from './routes/draftRoutes.js';
+import houseRoutes from './routes/houseRoutes.js';
 
 dotenv.config();
 
@@ -48,8 +49,8 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    // origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    origin: process.env.FRONTEND_URL || 'https://katuwalbanshabatika.netlify.app',
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    // origin: process.env.FRONTEND_URL || 'https://katuwalbanshabatika.netlify.app',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
   },
@@ -70,8 +71,8 @@ app.use(helmet({
 
 app.use(compression());
 app.use(cors({
-  // origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-   origin: process.env.FRONTEND_URL || 'https://katuwalbanshabatika.netlify.app',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  //  origin: process.env.FRONTEND_URL || 'https://katuwalbanshabatika.netlify.app',
   credentials: true,
 }));
 
@@ -93,7 +94,7 @@ app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Routes
 app.use('/api/members', memberRoutes);
-app.use('/api/family', familyRoutes);
+app.use('/api/families', familyRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/organization', organizationRoutes);
 app.use('/api/documents', documentRoutes);
@@ -104,6 +105,8 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/drafts', draftRoutes);
+app.use('/api/houses', houseRoutes);
+
 
 // Health check
 app.get('/health', (req, res) => {

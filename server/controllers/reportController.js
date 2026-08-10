@@ -210,6 +210,103 @@ export const generateFamilyReport = async (req, res) => {
   }
 };
 
+
+export const exportAllMembers = async (req, res) => {
+  try {
+    const members = await Member.find()
+      .populate('family', 'familyName familyNumber vanshaGenerationNumber')
+      .populate('father mother spouse', 'name memberNumber rollNumber')
+      .lean();
+
+    const reportData = members.map(m => ({
+      'Member ID': m.memberNumber || '',
+      'Roll Number': m.rollNumber || '',
+      'Full Name': m.name || '',
+      'Surname': m.surname || '',
+      'Gender': m.gender || '',
+      'Date of Birth': formatDate(m.dob),
+      'Generation': m.generation || '',
+      'Vansha/Generation': m.vanshaGenerationNumber || '',
+      'House Number': m.houseNumber || '',
+      'Family': m.family?.familyName || '',
+      'Family Number': m.family?.familyNumber || '',
+      'Status': m.isAlive ? 'Living' : 'Deceased',
+      'Verification': m.verificationStatus || 'Pending',
+      'Phone': m.phone || '',
+      'Email': m.email || '',
+      'District': m.district || '',
+      'Province': m.province || '',
+      'Father': m.father?.name || '',
+      'Mother': m.mother?.name || '',
+      'Spouse': m.spouse?.name || '',
+      'Occupation': m.occupation || '',
+      'Education': m.education || '',
+      'Citizenship': m.citizenshipNumber || '',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(reportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'All Members');
+    
+    // Auto-size columns
+    const cols = Object.keys(reportData[0] || {}).map(key => ({
+      wch: Math.max(key.length, 20)
+    }));
+    ws['!cols'] = cols;
+
+    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=Members_${new Date().toISOString().split('T')[0]}.xlsx`);
+    return res.send(buffer);
+  } catch (error) {
+    console.error('exportAllMembers Error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// NEW: Export family tree as PDF/Image
+export const exportFamilyTree = async (req, res) => {
+  try {
+    const { familyId, format = 'pdf', photoMode = 'true' } = req.query;
+
+    if (!familyId) {
+      return res.status(400).json({ message: 'Family ID is required' });
+    }
+
+    const family = await Family.findById(familyId)
+      .populate('house', 'houseNumber houseName');
+    
+    if (!family) {
+      return res.status(404).json({ message: 'Family not found' });
+    }
+
+    const members = await Member.find({ family: familyId })
+      .populate('father mother spouse', 'name photo memberNumber rollNumber vanshaGenerationNumber generation gender isAlive')
+      .lean();
+
+    // Build tree data
+    const treeData = buildLineageTree(members, family);
+
+    // Return tree data for frontend rendering
+    res.json({
+      success: true,
+      family: {
+        id: family._id,
+        name: family.familyName,
+        number: family.familyNumber,
+        vanshaGenerationNumber: family.vanshaGenerationNumber,
+        house: family.house,
+      },
+      treeData,
+      memberCount: members.length,
+      generationCount: [...new Set(members.map(m => m.generation))].length,
+    });
+  } catch (error) {
+    console.error('exportFamilyTree Error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const generateGenerationReport = async (req, res) => {
   try {
     const { format = 'json', familyId } = req.query;
