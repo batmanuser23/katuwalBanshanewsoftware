@@ -1,4 +1,5 @@
-// models/House.js
+// models/House.js - FIXED (houseNumber not required - auto-generated)
+
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,7 +12,7 @@ const houseSchema = new mongoose.Schema({
   },
   houseNumber: {
     type: String,
-    required: true,
+    // ⭐ REMOVED: required: true - auto-generated in pre-save
     unique: true,
     trim: true,
     index: true,
@@ -87,14 +88,14 @@ houseSchema.virtual('families', {
 houseSchema.set('toJSON', { virtuals: true });
 houseSchema.set('toObject', { virtuals: true });
 
-// Pre-save hook to ensure houseNumber format
-houseSchema.pre('save', async function(next) {
+// ⭐ FIXED: Pre-save hook for auto-generating houseNumber
+houseSchema.pre('save', async function() {
   if (this.isNew && !this.houseNumber) {
     const lastHouse = await this.constructor.findOne().sort({ houseNumber: -1 });
     const lastNumber = lastHouse ? parseInt(lastHouse.houseNumber) : 0;
     this.houseNumber = String(lastNumber + 1);
+    console.log(`🏠 Auto-generated houseNumber: ${this.houseNumber}`);
   }
-  next();
 });
 
 export default mongoose.model('House', houseSchema);
