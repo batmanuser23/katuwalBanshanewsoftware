@@ -1,4 +1,5 @@
-// src/data/options.js
+// src/data/options.js - UPDATED
+
 export const jobTitles = [
   { value: 'Farmer', label: '👨‍🌾 Farmer' },
   { value: 'Computer Operator', label: '💻 Computer Operator' },
@@ -59,13 +60,34 @@ export const maritalStatuses = [
   { value: 'other', label: 'Other' },
 ];
 
+// ⭐ UPDATED: Nepali relationships only
 export const relationships = [
-  { value: 'member', label: 'Member' },
-  { value: 'spouse', label: 'Spouse' },
-  { value: 'child', label: 'Child' },
-  { value: 'parent', label: 'Parent' },
-  { value: 'sibling', label: 'Sibling' },
-  { value: 'grandparent', label: 'Grandparent' },
-  { value: 'grandchild', label: 'Grandchild' },
-  { value: 'other', label: 'Other' },
+  { value: 'पुर्खा', label: 'पुर्खा' },
+  { value: 'जेठो हजुरबा', label: 'जेठो हजुरबा' },
+  { value: 'हजुरबा', label: 'हजुरबा' },
+  { value: 'हजुरआमा', label: 'हजुरआमा' },
+  { value: 'बुवा', label: 'बुवा' },
+  { value: 'आमा', label: 'आमा' },
+  { value: 'दाजु', label: 'दाजु' },
+  { value: 'भाइ', label: 'भाइ' },
+  { value: 'दिदी', label: 'दिदी' },
+  { value: 'बहिनी', label: 'बहिनी' },
+  { value: 'जेठो छोरा', label: 'जेठो छोरा' },
+  { value: 'छोरा', label: 'छोरा' },
+  { value: 'छोरी', label: 'छोरी' },
+  { value: 'जेठी छोरी', label: 'जेठी छोरी' },
+  { value: 'नाति', label: 'नाति' },
+  { value: 'नातिनी', label: 'नातिनी' },
+  { value: 'पनाति', label: 'पनाति' },
+  { value: 'पनातिनी', label: 'पनातिनी' },
+  { value: 'श्रीमान्', label: 'श्रीमान्' },
+  { value: 'श्रीमती', label: 'श्रीमती' },
+  { value: 'ज्वाइँ', label: 'ज्वाइँ' },
+  { value: 'बुहारी', label: 'बुहारी' },
+  { value: 'काका', label: 'काका' },
+  { value: 'काकी', label: 'काकी' },
+  { value: 'मामा', label: 'मामा' },
+  { value: 'माइजू', label: 'माइजू' },
+  { value: 'फुपू', label: 'फुपू' },
+  { value: 'फुपाजु', label: 'फुपाजु' },
 ];
