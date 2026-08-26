@@ -1,10 +1,11 @@
+// backend/src/controllers/donationController.js - UPDATED
 import Donation from '../models/Donation.js';
 import Member from '../models/Member.js';
 import Notification from '../models/Notification.js';
 import { io } from '../server.js';
 import { exportDonationsToExcel } from '../utils/excelExport.js';
 
-// ✅ Helper function to generate receipt number
+// Helper function to generate receipt number
 const generateReceiptNumber = async () => {
   const year = new Date().getFullYear();
   const count = await Donation.countDocuments();
@@ -41,24 +42,15 @@ export const getDonations = async (req, res) => {
         { remarks: { $regex: search, $options: 'i' } },
         { receiptNumber: { $regex: search, $options: 'i' } },
       ];
-      // Search by amount if search is a number
       if (!isNaN(search) && search.trim() !== '') {
         query.$or.push({ amount: Number(search) });
       }
     }
 
     // Filters
-    if (paymentMethod) {
-      query.paymentMethod = paymentMethod;
-    }
-
-    if (category) {
-      query.category = category;
-    }
-
-    if (paymentStatus) {
-      query.paymentStatus = paymentStatus;
-    }
+    if (paymentMethod) query.paymentMethod = paymentMethod;
+    if (category) query.category = category;
+    if (paymentStatus) query.paymentStatus = paymentStatus;
 
     if (startDate && endDate) {
       query.donationDate = {
@@ -69,18 +61,11 @@ export const getDonations = async (req, res) => {
 
     if (minAmount !== '' || maxAmount !== '') {
       const amountFilter = {};
-      if (minAmount !== '' && !isNaN(minAmount)) {
-        amountFilter.$gte = Number(minAmount);
-      }
-      if (maxAmount !== '' && !isNaN(maxAmount)) {
-        amountFilter.$lte = Number(maxAmount);
-      }
-      if (Object.keys(amountFilter).length > 0) {
-        query.amount = amountFilter;
-      }
+      if (minAmount !== '' && !isNaN(minAmount)) amountFilter.$gte = Number(minAmount);
+      if (maxAmount !== '' && !isNaN(maxAmount)) amountFilter.$lte = Number(maxAmount);
+      if (Object.keys(amountFilter).length > 0) query.amount = amountFilter;
     }
 
-    // Sorting
     const sort = {};
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
@@ -93,7 +78,7 @@ export const getDonations = async (req, res) => {
       Donation.countDocuments(query),
     ]);
 
-    // Calculate summary statistics
+    // Calculate summary statistics with payment status breakdown
     const summary = await Donation.aggregate([
       { $match: query },
       {
@@ -102,23 +87,39 @@ export const getDonations = async (req, res) => {
           totalAmount: { $sum: '$amount' },
           averageAmount: { $avg: '$amount' },
           count: { $sum: 1 },
-          qrPayments: {
-            $sum: { $cond: [{ $eq: ['$paymentMethod', 'qr'] }, 1, 0] },
-          },
-          cashPayments: {
-            $sum: { $cond: [{ $eq: ['$paymentMethod', 'cash'] }, 1, 0] },
-          },
-          qrTotal: {
-            $sum: { $cond: [{ $eq: ['$paymentMethod', 'qr'] }, '$amount', 0] },
-          },
-          cashTotal: {
-            $sum: { $cond: [{ $eq: ['$paymentMethod', 'cash'] }, '$amount', 0] },
-          },
-          pendingCount: {
-            $sum: { $cond: [{ $eq: ['$paymentStatus', 'pending'] }, 1, 0] },
-          },
+          qrPayments: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'qr'] }, 1, 0] } },
+          cashPayments: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'cash'] }, 1, 0] } },
+          qrTotal: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'qr'] }, '$amount', 0] } },
+          cashTotal: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'cash'] }, '$amount', 0] } },
+          pendingCount: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'pending'] }, 1, 0] } },
+          paidCount: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0] } },
+          pendingAmount: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'pending'] }, '$amount', 0] } },
+          paidAmount: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$amount', 0] } },
         },
       },
+    ]);
+
+    // Get unique donors count
+    const uniqueDonors = await Donation.aggregate([
+      { $match: query },
+      { $group: { _id: '$donorName' } },
+      { $count: 'count' },
+    ]);
+
+    // Get monthly aggregation
+    const monthly = await Donation.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$donationDate' },
+            month: { $month: '$donationDate' },
+          },
+          total: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
     ]);
 
     res.json({
@@ -138,15 +139,16 @@ export const getDonations = async (req, res) => {
         qrTotal: 0,
         cashTotal: 0,
         pendingCount: 0,
+        paidCount: 0,
+        pendingAmount: 0,
+        paidAmount: 0,
       },
+      uniqueDonors: uniqueDonors[0]?.count || 0,
+      monthly,
     });
   } catch (error) {
     console.error("❌ GET DONATIONS ERROR:", error);
-    console.error(error.stack);
-    res.status(500).json({
-      message: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -169,7 +171,7 @@ export const getDonationById = async (req, res) => {
   }
 };
 
-// Create donation with auto-notification
+// Create donation
 export const createDonation = async (req, res) => {
   try {
     console.log("📥 Create Donation Request Body:", req.body);
@@ -180,15 +182,12 @@ export const createDonation = async (req, res) => {
       updatedBy: req.user?._id || null,
     };
 
-    // Clean up empty fields before validation
+    // Clean up empty fields
     if (!donationData.donorEmail || donationData.donorEmail.trim() === '') {
       delete donationData.donorEmail;
     }
     if (!donationData.donorPhone || donationData.donorPhone.trim() === '') {
       delete donationData.donorPhone;
-    }
-    if (!donationData.purpose || donationData.purpose.trim() === '') {
-      delete donationData.purpose;
     }
     if (!donationData.remarks || donationData.remarks.trim() === '') {
       delete donationData.remarks;
@@ -202,27 +201,28 @@ export const createDonation = async (req, res) => {
         donationData.donorPhone = member.phone || donationData.donorPhone || '';
         donationData.donorEmail = member.email || donationData.donorEmail || '';
       } else {
-        return res.status(400).json({ 
-          message: 'Selected member not found' 
-        });
+        return res.status(400).json({ message: 'Selected member not found' });
       }
     }
 
-    // Ensure donorName is present for external donors
-    if (donationData.donorType === 'external' && !donationData.donorName) {
-      return res.status(400).json({
-        message: 'Donor name is required for external donors'
-      });
+    // Ensure donorName is present
+    if (!donationData.donorName) {
+      return res.status(400).json({ message: 'Donor name is required' });
     }
 
-    // ✅ Generate receipt number
+    // Generate receipt number
     donationData.receiptNumber = await generateReceiptNumber();
+
+    // Set default paymentStatus if not provided
+    if (!donationData.paymentStatus) {
+      donationData.paymentStatus = 'pending';
+    }
 
     const donation = new Donation(donationData);
     await donation.save();
 
     // Auto-create notification
-    const notificationMessage = `${donation.donorName} donated $${donation.amount.toFixed(2)} via ${donation.paymentMethod.toUpperCase()}`;
+    const notificationMessage = `${donation.donorName} donated Rs. ${donation.amount.toFixed(2)} via ${donation.paymentMethod.toUpperCase()} - Status: ${donation.paymentStatus}`;
     
     const notification = new Notification({
       type: 'donation_added',
@@ -234,13 +234,13 @@ export const createDonation = async (req, res) => {
         amount: donation.amount,
         paymentMethod: donation.paymentMethod,
         receiptNumber: donation.receiptNumber,
+        paymentStatus: donation.paymentStatus,
       },
       createdBy: req.user?._id || null,
     });
 
     await notification.save();
 
-    // Emit real-time events
     if (io) {
       io.emit('donation:created', donation);
       io.emit('notification:new', notification);
@@ -249,24 +249,14 @@ export const createDonation = async (req, res) => {
     res.status(201).json(donation);
   } catch (error) {
     console.error("❌ Create Donation Error:", error);
-    console.error("Stack:", error.stack);
-    
-    // Handle Mongoose validation errors
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => ({
         field: err.path,
         message: err.message
       }));
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors 
-      });
+      return res.status(400).json({ message: 'Validation failed', errors });
     }
-    
-    res.status(500).json({ 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -290,9 +280,6 @@ export const updateDonation = async (req, res) => {
     if (!updateData.donorPhone || updateData.donorPhone.trim() === '') {
       delete updateData.donorPhone;
     }
-    if (!updateData.purpose || updateData.purpose.trim() === '') {
-      delete updateData.purpose;
-    }
     if (!updateData.remarks || updateData.remarks.trim() === '') {
       delete updateData.remarks;
     }
@@ -303,7 +290,6 @@ export const updateDonation = async (req, res) => {
       { new: true, runValidators: true }
     ).populate('donorId', 'name photo phone email');
 
-    // Emit socket event for real-time updates
     if (io) {
       io.emit('donation:updated', updatedDonation);
     }
@@ -316,10 +302,7 @@ export const updateDonation = async (req, res) => {
         field: err.path,
         message: err.message
       }));
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors 
-      });
+      return res.status(400).json({ message: 'Validation failed', errors });
     }
     res.status(400).json({ message: error.message });
   }
@@ -335,7 +318,6 @@ export const deleteDonation = async (req, res) => {
 
     await donation.deleteOne();
 
-    // Emit socket event for real-time updates
     if (io) {
       io.emit('donation:deleted', { id: req.params.id });
     }
@@ -357,17 +339,20 @@ export const getDonationStats = async (req, res) => {
           totalAmount: { $sum: '$amount' },
           averageAmount: { $avg: '$amount' },
           count: { $sum: 1 },
-          qrPayments: {
-            $sum: { $cond: [{ $eq: ['$paymentMethod', 'qr'] }, 1, 0] },
-          },
-          cashPayments: {
-            $sum: { $cond: [{ $eq: ['$paymentMethod', 'cash'] }, 1, 0] },
-          },
-          pendingPayments: {
-            $sum: { $cond: [{ $eq: ['$paymentStatus', 'pending'] }, 1, 0] },
-          },
+          qrPayments: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'qr'] }, 1, 0] } },
+          cashPayments: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'cash'] }, 1, 0] } },
+          pendingPayments: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'pending'] }, 1, 0] } },
+          paidPayments: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0] } },
+          pendingAmount: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'pending'] }, '$amount', 0] } },
+          paidAmount: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$amount', 0] } },
         },
       },
+    ]);
+
+    // Unique donors
+    const uniqueDonors = await Donation.aggregate([
+      { $group: { _id: '$donorName' } },
+      { $count: 'count' },
     ]);
 
     const monthlyStats = await Donation.aggregate([
@@ -382,6 +367,19 @@ export const getDonationStats = async (req, res) => {
         },
       },
       { $sort: { '_id.year': 1, '_id.month': 1 } },
+    ]);
+
+    // Per donor total
+    const perDonorStats = await Donation.aggregate([
+      {
+        $group: {
+          _id: '$donorName',
+          totalAmount: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { totalAmount: -1 } },
+      { $limit: 20 },
     ]);
 
     const paymentMethodStats = await Donation.aggregate([
@@ -402,9 +400,14 @@ export const getDonationStats = async (req, res) => {
         qrPayments: 0,
         cashPayments: 0,
         pendingPayments: 0,
+        paidPayments: 0,
+        pendingAmount: 0,
+        paidAmount: 0,
       },
+      uniqueDonors: uniqueDonors[0]?.count || 0,
       monthly: monthlyStats,
       byPaymentMethod: paymentMethodStats,
+      perDonor: perDonorStats,
     });
   } catch (error) {
     console.error("❌ Get Donation Stats Error:", error);
@@ -416,7 +419,7 @@ export const getDonationStats = async (req, res) => {
 export const exportAllDonationsToExcel = async (req, res) => {
   try {
     const donations = await Donation.find()
-      .populate('donorId', 'name photo phone email')
+      .populate('donorId', 'name phone email')
       .sort({ donationDate: -1 });
 
     const buffer = await exportDonationsToExcel(donations);
@@ -434,7 +437,7 @@ export const exportAllDonationsToExcel = async (req, res) => {
 export const exportDonationToExcel = async (req, res) => {
   try {
     const donation = await Donation.findById(req.params.id)
-      .populate('donorId', 'name photo phone email');
+      .populate('donorId', 'name phone email');
 
     if (!donation) {
       return res.status(404).json({ message: 'Donation not found' });

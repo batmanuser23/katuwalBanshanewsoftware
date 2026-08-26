@@ -207,7 +207,8 @@ export const memberValidation = [
     }),
 ];
 
-// Rest of validations...
+// ... existing code ...
+
 export const donationValidation = [
   body('donorType')
     .isIn(['member', 'family', 'external'])
@@ -254,11 +255,7 @@ export const donationValidation = [
     .optional()
     .isISO8601()
     .withMessage('Invalid date format'),
-  body('purpose')
-    .optional()
-    .trim()
-    .isLength({ max: 200 })
-    .withMessage('Purpose must be less than 200 characters'),
+  // ❌ REMOVED: purpose validation
   body('remarks')
     .optional()
     .trim()
@@ -272,11 +269,14 @@ export const donationValidation = [
     .optional()
     .isBoolean()
     .withMessage('qrPaymentCompleted must be a boolean'),
+  // ⭐ UPDATED: paymentStatus with 'paid'
   body('paymentStatus')
     .optional()
-    .isIn(['pending', 'completed', 'failed'])
+    .isIn(['pending', 'paid', 'failed'])
     .withMessage('Invalid payment status'),
 ];
+
+// ... existing code ...
 
 export const relationshipValidation = [
   body('memberId')

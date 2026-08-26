@@ -1,67 +1,144 @@
-// // src/api/reports.js
-// import axios from './axios';
+// // // src/api/reports.js
+// // import axios from './axios';
 
-// export const generateGenealogyReport = async (params = {}) => {
-//   const { data } = await axios.get('/reports/genealogy', { 
-//     params, 
+// // export const generateGenealogyReport = async (params = {}) => {
+// //   const { data } = await axios.get('/reports/genealogy', { 
+// //     params, 
+// //     responseType: 'blob' 
+// //   });
+// //   return data;
+// // };
+
+// // export const generateFamilyReport = async (params = {}) => {
+// //   const { data } = await axios.get('/reports/family', { 
+// //     params, 
+// //     responseType: 'blob' 
+// //   });
+// //   return data;
+// // };
+
+// // export const generateAllFamiliesReport = async (params = {}) => {
+// //   const { data } = await axios.get('/reports/all-families', { 
+// //     params, 
+// //     responseType: 'blob' 
+// //   });
+// //   return data;
+// // };
+
+// // export const generateMemberReport = async (params = {}) => {
+// //   const { data } = await axios.get('/reports/members', { 
+// //     params, 
+// //     responseType: 'blob' 
+// //   });
+// //   return data;
+// // };
+
+// // export const generateGenerationReport = async (params = {}) => {
+// //   const { data } = await axios.get('/reports/generation', { 
+// //     params, 
+// //     responseType: 'blob' 
+// //   });
+// //   return data;
+// // };
+
+// // export const generateDonationReport = async (params = {}) => {
+// //   const { data } = await axios.get('/reports/donation', { 
+// //     params, 
+// //     responseType: 'blob' 
+// //   });
+// //   return data;
+// // };
+
+// // export const generateDemographicReport = async (params = {}) => {
+// //   const { data } = await axios.get('/reports/demographic', { 
+// //     params, 
+// //     responseType: 'blob' 
+// //   });
+// //   return data;
+// // };
+
+// // src/api/reports.js - UPDATED
+// import api from './axios';
+
+// export const generateFamilyReport = async (params) => {
+//   const response = await api.get('/reports/family', { 
+//     params,
 //     responseType: 'blob' 
 //   });
-//   return data;
+//   return response.data;
 // };
 
-// export const generateFamilyReport = async (params = {}) => {
-//   const { data } = await axios.get('/reports/family', { 
-//     params, 
+// export const generateAllFamiliesReport = async (params) => {
+//   const response = await api.get('/reports/all-families', { 
+//     params,
 //     responseType: 'blob' 
 //   });
-//   return data;
+//   return response.data;
 // };
 
-// export const generateAllFamiliesReport = async (params = {}) => {
-//   const { data } = await axios.get('/reports/all-families', { 
-//     params, 
+// export const generateMemberReport = async (params) => {
+//   const response = await api.get('/reports/members', { 
+//     params,
 //     responseType: 'blob' 
 //   });
-//   return data;
+//   return response.data;
 // };
 
-// export const generateMemberReport = async (params = {}) => {
-//   const { data } = await axios.get('/reports/members', { 
-//     params, 
+// export const generateGenerationReport = async (params) => {
+//   const response = await api.get('/reports/generation', { 
+//     params,
 //     responseType: 'blob' 
 //   });
-//   return data;
+//   return response.data;
 // };
 
-// export const generateGenerationReport = async (params = {}) => {
-//   const { data } = await axios.get('/reports/generation', { 
-//     params, 
+// export const generateDonationReport = async (params) => {
+//   const response = await api.get('/reports/donation', { 
+//     params,
 //     responseType: 'blob' 
 //   });
-//   return data;
+//   return response.data;
 // };
 
-// export const generateDonationReport = async (params = {}) => {
-//   const { data } = await axios.get('/reports/donation', { 
-//     params, 
+// export const generateDemographicReport = async (params) => {
+//   const response = await api.get('/reports/demographic', { 
+//     params,
 //     responseType: 'blob' 
 //   });
-//   return data;
+//   return response.data;
 // };
 
-// export const generateDemographicReport = async (params = {}) => {
-//   const { data } = await axios.get('/reports/demographic', { 
-//     params, 
+// export const generateGenealogyReport = async (params) => {
+//   const response = await api.get('/reports/genealogy', { 
+//     params,
 //     responseType: 'blob' 
 //   });
-//   return data;
+//   return response.data;
 // };
+
+// // NEW: Export all members
+// export const exportAllMembers = async (params) => {
+//   const response = await api.get('/reports/export/members', { 
+//     params,
+//     responseType: 'blob' 
+//   });
+//   return response.data;
+// };
+
+// // NEW: Export family tree
+// export const exportFamilyTree = async (params) => {
+//   const response = await api.get('/reports/export/family-tree', { 
+//     params 
+//   });
+//   return response.data;
+// };
+
 
 // src/api/reports.js - UPDATED
-import api from './axios';
+import axios from './axios';
 
 export const generateFamilyReport = async (params) => {
-  const response = await api.get('/reports/family', { 
+  const response = await axios.get('/reports/family', { 
     params,
     responseType: 'blob' 
   });
@@ -69,7 +146,7 @@ export const generateFamilyReport = async (params) => {
 };
 
 export const generateAllFamiliesReport = async (params) => {
-  const response = await api.get('/reports/all-families', { 
+  const response = await axios.get('/reports/all-families', { 
     params,
     responseType: 'blob' 
   });
@@ -77,7 +154,7 @@ export const generateAllFamiliesReport = async (params) => {
 };
 
 export const generateMemberReport = async (params) => {
-  const response = await api.get('/reports/members', { 
+  const response = await axios.get('/reports/members', { 
     params,
     responseType: 'blob' 
   });
@@ -85,7 +162,7 @@ export const generateMemberReport = async (params) => {
 };
 
 export const generateGenerationReport = async (params) => {
-  const response = await api.get('/reports/generation', { 
+  const response = await axios.get('/reports/generation', { 
     params,
     responseType: 'blob' 
   });
@@ -93,7 +170,7 @@ export const generateGenerationReport = async (params) => {
 };
 
 export const generateDonationReport = async (params) => {
-  const response = await api.get('/reports/donation', { 
+  const response = await axios.get('/reports/donation', { 
     params,
     responseType: 'blob' 
   });
@@ -101,7 +178,7 @@ export const generateDonationReport = async (params) => {
 };
 
 export const generateDemographicReport = async (params) => {
-  const response = await api.get('/reports/demographic', { 
+  const response = await axios.get('/reports/demographic', { 
     params,
     responseType: 'blob' 
   });
@@ -109,26 +186,25 @@ export const generateDemographicReport = async (params) => {
 };
 
 export const generateGenealogyReport = async (params) => {
-  const response = await api.get('/reports/genealogy', { 
+  const response = await axios.get('/reports/genealogy', { 
     params,
     responseType: 'blob' 
   });
   return response.data;
 };
 
-// NEW: Export all members
 export const exportAllMembers = async (params) => {
-  const response = await api.get('/reports/export/members', { 
+  const response = await axios.get('/reports/export/members', { 
     params,
     responseType: 'blob' 
   });
   return response.data;
 };
 
-// NEW: Export family tree
 export const exportFamilyTree = async (params) => {
-  const response = await api.get('/reports/export/family-tree', { 
-    params 
+  const response = await axios.get('/reports/export/family-tree', { 
+    params,
+    responseType: 'blob' 
   });
   return response.data;
 };

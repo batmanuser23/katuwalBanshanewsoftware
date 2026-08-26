@@ -1,3 +1,4 @@
+// backend/src/models/Donation.js - UPDATED (purpose removed, paymentStatus added)
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -77,10 +78,6 @@ const donationSchema = new mongoose.Schema({
   },
   
   // Additional Information
-  purpose: {
-    type: String,
-    trim: true,
-  },
   remarks: {
     type: String,
     trim: true,
@@ -90,10 +87,10 @@ const donationSchema = new mongoose.Schema({
     default: false,
   },
   
-  // Status
+  // Status - NEW
   paymentStatus: {
     type: String,
-    enum: ['pending', 'completed', 'failed'],
+    enum: ['pending', 'paid', 'failed'],
     default: 'pending',
   },
   
@@ -120,15 +117,5 @@ donationSchema.index({ paymentMethod: 1 });
 donationSchema.index({ donationDate: -1 });
 donationSchema.index({ paymentStatus: 1 });
 donationSchema.index({ receiptNumber: 1 });
-
-// Pre-save middleware to generate receipt number
-// donationSchema.pre('save', async function(next) {
-//   if (!this.receiptNumber) {
-//     const year = new Date().getFullYear();
-//     const count = await this.constructor.countDocuments();
-//     this.receiptNumber = `R-${year}-${String(count + 1).padStart(4, '0')}`;
-//   }
-//   next();
-// });
 
 export default mongoose.model('Donation', donationSchema);
