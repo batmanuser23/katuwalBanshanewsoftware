@@ -141,3 +141,9 @@ export const getNextVanshaNumber = async (familyId) => {
   const response = await api.get(`/families/next-vansha/${familyId}`);
   return response.data;
 };
+
+
+export const getFamilyBanshaNumbers = async (familyId) => {
+  const response = await api.get(`/families/${familyId}/bansha-numbers`);
+  return response.data;
+};

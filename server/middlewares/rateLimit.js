@@ -35,7 +35,7 @@ const requests = new Map();
 export const rateLimit = (options = {}) => {
   const {
     windowMs = 15 * 60 * 1000, // 15 minutes
-    max = 1000, // ⭐ Increased for development
+    max = 3000, // ⭐ Increased for development
     message = 'Too many requests, please try again later.',
   } = options;
 
