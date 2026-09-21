@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Shop Management · Client Demo</title>
+  <!-- Tailwind + Font Awesome + Chart.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* Professional blue business theme */
+    body {
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f5f8ff;
+    }
+    .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #bfdbfe; border-radius: 8px; }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 40, 100, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+      border: 1px solid #e6edf8;
+      transition: all 0.15s ease;
+    }
+    .card:hover { box-shadow: 0 8px 22px rgba(0, 80, 200, 0.08); }
+
+    .table-row-hover:hover { background-color: #f0f6ff; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .badge-success { background: #dcfce7; color: #166534; }
+    .badge-warning { background: #fef3c7; color: #b45309; }
+    .badge-danger { background: #fee2e2; color: #b91c1c; }
+    .badge-info { background: #dbeafe; color: #1e40af; }
+    .badge-purple { background: #f3e8ff; color: #6b21a8; }
+    .badge-teal { background: #ccfbf1; color: #115e59; }
+
+    /* smooth transitions */
+    .nav-item {
+      transition: all 0.12s ease;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .nav-item:hover { background-color: #eff6ff; }
+    .nav-item.active {
+      background-color: #dbeafe;
+      color: #1e3a8a;
+      font-weight: 600;
+      box-shadow: inset 4px 0 0 #2563eb;
+    }
+
+    /* POS product cards */
+    .product-card {
+      transition: transform 0.1s, border 0.1s, background 0.1s;
+      cursor: pointer;
+      border: 1px solid #e6edf8;
+    }
+    .product-card:hover {
+      background: #f0f7ff;
+      border-color: #93c5fd;
+      transform: translateY(-1px);
+    }
+
+    /* toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e3a8a;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 60px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      box-shadow: 0 12px 30px rgba(30, 58, 138, 0.25);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: opacity 0.3s;
+    }
+
+    /* buttons custom */
+    .btn-primary {
+      background-color: #2563eb;
+      transition: background-color 0.15s;
+    }
+    .btn-primary:hover { background-color: #1d4ed8; }
+
+    /* header blue tint */
+    .header-blue { background: #ffffff; border-bottom: 1px solid #dbeafe; }
+
+    /* modal polish */
+    .modal-overlay {
+      backdrop-filter: blur(3px);
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    /* sidebar mobile */
+    #sidebar {
+      transition: transform 0.2s ease;
+    }
+    #sidebar.open {
+      transform: translateX(0) !important;
+    }
+
+    /* stat card mini charts */
+    .mini-chart { height: 40px; width: 100%; }
+
+    /* pulse for notification */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .pulse-dot { animation: pulse-dot 1.5s infinite; }
+
+    /* Print-friendly invoice */
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+<!-- MAIN LAYOUT -->
+<div class="flex h-screen overflow-hidden">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="w-64 shrink-0 bg-white border-r border-blue-100 flex flex-col sidebar-scroll overflow-y-auto fixed lg:static inset-y-0 left-0 z-40 -translate-x-full lg:translate-x-0">
+    <!-- Brand -->
+    <div class="p-5 flex items-center space-x-3 border-b border-blue-50">
+      <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-200">
+        <i class="fas fa-mobile-alt text-lg"></i>
+      </div>
+      <div>
+        <h1 class="font-semibold text-slate-800 tracking-tight">MobileHub</h1>
+        <p class="text-[10px] text-blue-500 uppercase tracking-wider font-medium">Management System</p>
+      </div>
+    </div>
+
+    <!-- Nav items -->
+    <nav class="flex-1 px-3 py-4 space-y-0.5 text-sm">
+      <div class="nav-item active px-3 py-2.5 flex items-center gap-3 text-slate-700" data-page="dashboard">
+        <i class="fas fa-th-large w-4 text-blue-500"></i> Dashboard
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="products">
+        <i class="fas fa-box w-4 text-blue-500"></i> Products
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="inventory">
+        <i class="fas fa-warehouse w-4 text-blue-500"></i> Inventory
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="pos">
+        <i class="fas fa-cash-register w-4 text-blue-500"></i> Sales / POS
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="salesHistory">
+        <i class="fas fa-receipt w-4 text-blue-500"></i> Sales History
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="salesReturn">
+        <i class="fas fa-undo-alt w-4 text-blue-500"></i> Sales Return
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="customers">
+        <i class="fas fa-users w-4 text-blue-500"></i> Customers
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="customerDue">
+        <i class="fas fa-hand-holding-usd w-4 text-blue-500"></i> Customer Due
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="suppliers">
+        <i class="fas fa-truck w-4 text-blue-500"></i> Suppliers
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="purchases">
+        <i class="fas fa-shopping-bag w-4 text-blue-500"></i> Purchases
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="expenses">
+        <i class="fas fa-file-invoice-dollar w-4 text-blue-500"></i> Expenses
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="reports">
+        <i class="fas fa-chart-bar w-4 text-blue-500"></i> Reports
+      </div>
+      <div class="nav-item px-3 py-2.5 flex items-center gap-3 text-slate-600" data-page="settings">
+        <i class="fas fa-cog w-4 text-blue-500"></i> Settings
+      </div>
+    </nav>
+
+    <!-- Demo badge -->
+    <div class="p-4 m-3 bg-blue-50 rounded-xl text-xs text-blue-700 border border-blue-100 flex items-center gap-2">
+      <i class="fas fa-database text-blue-400"></i> Demo data · NPR
+    </div>
+  </aside>
+
+  <!-- OVERLAY for mobile -->
+  <div id="overlay" class="fixed inset-0 bg-black/30 z-30 hidden lg:hidden"></div>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 flex flex-col overflow-hidden bg-[#f5f8ff]">
+    <!-- HEADER -->
+    <header class="header-blue backdrop-blur-sm px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-3">
+        <button id="menuToggle" class="lg:hidden text-blue-600 text-xl"><i class="fas fa-bars"></i></button>
+        <div>
+          <h2 id="pageTitle" class="text-lg lg:text-xl font-semibold text-slate-800 tracking-tight">Dashboard</h2>
+          <p class="text-xs text-blue-500 hidden sm:block">Mobile Shop · <span class="text-blue-600 font-medium">Demo mode</span></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 lg:gap-4">
+        <div class="relative hidden md:block">
+          <i class="fas fa-search absolute left-3 top-2.5 text-blue-400 text-sm"></i>
+          <input type="text" placeholder="Search products, invoices..." class="pl-9 pr-4 py-2 w-48 lg:w-64 text-sm bg-blue-50/50 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-200 outline-none">
+        </div>
+        <div class="relative cursor-pointer" id="notificationBell">
+          <i class="far fa-bell text-blue-600 text-lg hover:text-blue-800"></i>
+          <span class="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full pulse-dot"></span>
+        </div>
+        <div class="flex items-center gap-2 pl-2 border-l border-blue-100">
+          <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-sm font-medium">RS</div>
+          <div class="hidden sm:block text-sm">
+            <p class="font-medium leading-tight">Ram Shrestha</p>
+            <p class="text-xs text-blue-400">Admin</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- PAGE CONTAINER (dynamic) -->
+    <div id="pageContent" class="flex-1 overflow-y-auto p-4 lg:p-6">
+      <!-- rendered by JS -->
+    </div>
+  </main>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toastContainer"></div>
+
+<script>
+  // ============================================================
+  // DEMO DATA — Extended product catalogue
+  // ============================================================
+  const products = [
+    { id: 1, name: 'iPhone 15 Pro', brand: 'Apple', model: 'A2848', sku: 'IP15P-256', imei: '356789012345671', purchase: 135000, selling: 148000, stock: 5, minStock: 2, category: 'Phone', storage: '256GB', ram: '8GB', color: 'Natural', warranty: '1yr' },
+    { id: 2, name: 'iPhone 16', brand: 'Apple', model: 'A3089', sku: 'IP16-128', imei: '356789012345672', purchase: 120000, selling: 132000, stock: 8, minStock: 3, category: 'Phone', storage: '128GB', ram: '8GB', color: 'Blue', warranty: '1yr' },
+    { id: 3, name: 'Samsung Galaxy S24', brand: 'Samsung', model: 'SM-S921', sku: 'SGS24-256', imei: '356789012345673', purchase: 105000, selling: 118000, stock: 6, minStock: 2, category: 'Phone', storage: '256GB', ram: '12GB', color: 'Onyx', warranty: '1yr' },
+    { id: 4, name: 'Samsung A55', brand: 'Samsung', model: 'SM-A556', sku: 'SA55-128', imei: '356789012345674', purchase: 48000, selling: 54000, stock: 12, minStock: 4, category: 'Phone', storage: '128GB', ram: '8GB', color: 'Awesome', warranty: '1yr' },
+    { id: 5, name: 'Redmi Note 13', brand: 'Xiaomi', model: '2312DRA', sku: 'RN13-128', imei: '356789012345675', purchase: 28000, selling: 32500, stock: 20, minStock: 5, category: 'Phone', storage: '128GB', ram: '6GB', color: 'Midnight', warranty: '1yr' },
+    { id: 6, name: 'OnePlus 12', brand: 'OnePlus', model: 'CPH2581', sku: 'OP12-256', imei: '356789012345676', purchase: 95000, selling: 105000, stock: 3, minStock: 2, category: 'Phone', storage: '256GB', ram: '12GB', color: 'Emerald', warranty: '1yr' },
+    { id: 7, name: 'Vivo V30', brand: 'Vivo', model: 'V2318', sku: 'VV30-256', imei: '356789012345677', purchase: 52000, selling: 59000, stock: 7, minStock: 3, category: 'Phone', storage: '256GB', ram: '8GB', color: 'Peacock', warranty: '1yr' },
+    { id: 8, name: 'Oppo Reno 11', brand: 'Oppo', model: 'CPH2599', sku: 'OR11-256', imei: '356789012345678', purchase: 55000, selling: 62500, stock: 2, minStock: 3, category: 'Phone', storage: '256GB', ram: '12GB', color: 'Wave', warranty: '1yr' },
+    { id: 9, name: 'Redmi 13C', brand: 'Xiaomi', model: '23100RN', sku: 'R13C-128', imei: '356789012345679', purchase: 18000, selling: 21500, stock: 15, minStock: 5, category: 'Phone', storage: '128GB', ram: '4GB', color: 'Navy', warranty: '1yr' },
+    { id: 10, name: 'Realme Narzo 70', brand: 'Realme', model: 'RMX3861', sku: 'RNZ70-128', imei: '356789012345680', purchase: 22000, selling: 26500, stock: 10, minStock: 4, category: 'Phone', storage: '128GB', ram: '6GB', color: 'Forest', warranty: '1yr' },
+    { id: 11, name: 'iPhone 13', brand: 'Apple', model: 'A2633', sku: 'IP13-128', imei: '356789012345681', purchase: 85000, selling: 96000, stock: 4, minStock: 2, category: 'Phone', storage: '128GB', ram: '6GB', color: 'Pink', warranty: '1yr' },
+    { id: 12, name: 'Samsung M14', brand: 'Samsung', model: 'SM-M146', sku: 'SM14-128', imei: '356789012345682', purchase: 25000, selling: 29500, stock: 9, minStock: 3, category: 'Phone', storage: '128GB', ram: '6GB', color: 'Silver', warranty: '1yr' },
+    // Accessories
+    { id: 13, name: 'AirPods Pro 2', brand: 'Apple', model: 'A2698', sku: 'APP2-001', imei: '356789012345683', purchase: 32000, selling: 38500, stock: 7, minStock: 2, category: 'Accessory', storage: '-', ram: '-', color: 'White', warranty: '1yr' },
+    { id: 14, name: 'Samsung Buds FE', brand: 'Samsung', model: 'SM-R400', sku: 'SBFE-001', imei: '356789012345684', purchase: 12000, selling: 15500, stock: 12, minStock: 4, category: 'Accessory', storage: '-', ram: '-', color: 'Graphite', warranty: '6mo' },
+    { id: 15, name: '65W Charger', brand: 'Xiaomi', model: 'MDY-14-ET', sku: 'XCH-65W', imei: '356789012345685', purchase: 2200, selling: 3200, stock: 25, minStock: 8, category: 'Accessory', storage: '-', ram: '-', color: 'White', warranty: '6mo' },
+    { id: 16, name: 'USB-C Cable 1m', brand: 'Baseus', model: 'CATKLF', sku: 'USB-C-1M', imei: '356789012345686', purchase: 350, selling: 650, stock: 60, minStock: 20, category: 'Accessory', storage: '-', ram: '-', color: 'Black', warranty: '3mo' },
+    { id: 17, name: 'Phone Case iPhone 15', brand: 'Spigen', model: 'ACS06580', sku: 'CASE-IP15', imei: '356789012345687', purchase: 800, selling: 1500, stock: 30, minStock: 10, category: 'Accessory', storage: '-', ram: '-', color: 'Clear', warranty: 'N/A' },
+    { id: 18, name: 'Screen Protector', brand: 'Nillkin', model: 'SP-UNI', sku: 'SCR-PRO-001', imei: '356789012345688', purchase: 150, selling: 400, stock: 100, minStock: 30, category: 'Accessory', storage: '-', ram: '-', color: 'Clear', warranty: 'N/A' },
+    { id: 19, name: 'Power Bank 20000mAh', brand: 'Anker', model: 'A1287', sku: 'PB-20K', imei: '356789012345689', purchase: 3800, selling: 5200, stock: 14, minStock: 5, category: 'Accessory', storage: '-', ram: '-', color: 'Black', warranty: '1yr' },
+    { id: 20, name: 'Bluetooth Speaker', brand: 'JBL', model: 'GO4', sku: 'SPK-JBL-GO4', imei: '356789012345690', purchase: 6500, selling: 8500, stock: 8, minStock: 3, category: 'Accessory', storage: '-', ram: '-', color: 'Blue', warranty: '1yr' },
+    // Smartwatches
+    { id: 21, name: 'Apple Watch SE', brand: 'Apple', model: 'A2722', sku: 'AWS-SE-44', imei: '356789012345691', purchase: 38000, selling: 45000, stock: 5, minStock: 2, category: 'Wearable', storage: '32GB', ram: '1GB', color: 'Midnight', warranty: '1yr' },
+    { id: 22, name: 'Samsung Watch 6', brand: 'Samsung', model: 'SM-R930', sku: 'SW6-40', imei: '356789012345692', purchase: 35000, selling: 42000, stock: 4, minStock: 2, category: 'Wearable', storage: '16GB', ram: '2GB', color: 'Silver', warranty: '1yr' },
+    // Tablets
+    { id: 23, name: 'iPad 10th Gen', brand: 'Apple', model: 'A2696', sku: 'IPAD10-64', imei: '356789012345693', purchase: 58000, selling: 68000, stock: 6, minStock: 2, category: 'Tablet', storage: '64GB', ram: '4GB', color: 'Blue', warranty: '1yr' },
+    { id: 24, name: 'Samsung Tab A9+', brand: 'Samsung', model: 'SM-X210', sku: 'STA9P-64', imei: '356789012345694', purchase: 32000, selling: 38500, stock: 5, minStock: 2, category: 'Tablet', storage: '64GB', ram: '4GB', color: 'Gray', warranty: '1yr' },
+  ];
+
+  const customers = [
+    { id: 1, name: 'Sujan Shrestha', phone: '9841234567', email: 'sujan@example.com', address: 'Kathmandu', totalPurchase: 245000, paid: 245000, due: 0, lastPurchase: '2025-03-28', status: 'Active' },
+    { id: 2, name: 'Bina Gurung', phone: '9812345678', email: 'bina@example.com', address: 'Pokhara', totalPurchase: 132000, paid: 120000, due: 12000, lastPurchase: '2025-03-27', status: 'Active' },
+    { id: 3, name: 'Rajesh Hamal', phone: '9801122334', email: 'rajesh@example.com', address: 'Lalitpur', totalPurchase: 98000, paid: 98000, due: 0, lastPurchase: '2025-03-25', status: 'Active' },
+    { id: 4, name: 'Pooja K.C.', phone: '9845566778', email: 'pooja@example.com', address: 'Bhaktapur', totalPurchase: 54000, paid: 50000, due: 4000, lastPurchase: '2025-03-24', status: 'Active' },
+    { id: 5, name: 'Anish Thapa', phone: '9856677889', email: 'anish@example.com', address: 'Kathmandu', totalPurchase: 32500, paid: 32500, due: 0, lastPurchase: '2025-03-22', status: 'Active' },
+    { id: 6, name: 'Sunita Rai', phone: '9867788990', email: 'sunita@example.com', address: 'Dharan', totalPurchase: 18500, paid: 15000, due: 3500, lastPurchase: '2025-03-20', status: 'Active' },
+    { id: 7, name: 'Bikash Lama', phone: '9878899001', email: 'bikash@example.com', address: 'Butwal', totalPurchase: 76000, paid: 76000, due: 0, lastPurchase: '2025-03-18', status: 'Active' },
+    { id: 8, name: 'Mina Shrestha', phone: '9889900112', email: 'mina@example.com', address: 'Kathmandu', totalPurchase: 42000, paid: 38000, due: 4000, lastPurchase: '2025-03-15', status: 'Active' },
+  ];
+
+  const suppliers = [
+    { id: 1, name: 'Nepal Mobile Distributors', company: 'NMD Pvt. Ltd.', phone: '01-4567890', email: 'info@nmd.com', totalPurchase: 1250000, paid: 1200000, due: 50000 },
+    { id: 2, name: 'Himalayan Telecom', company: 'HTC Suppliers', phone: '01-4234567', email: 'sales@htc.com', totalPurchase: 890000, paid: 850000, due: 40000 },
+    { id: 3, name: 'Everest Electronics', company: 'Everest Traders', phone: '01-4987654', email: 'everest@example.com', totalPurchase: 2300000, paid: 2300000, due: 0 },
+    { id: 4, name: 'Apple Authorized Dist.', company: 'AAD Nepal', phone: '01-4111222', email: 'apple@aad.com', totalPurchase: 3500000, paid: 3400000, due: 100000 },
+    { id: 5, name: 'Samsung Nepal', company: 'Samsung Electronics', phone: '01-4222333', email: 'samsung@example.com', totalPurchase: 2800000, paid: 2800000, due: 0 },
+  ];
+
+  const recentSales = [
+    { invoice: 'INV-1024', date: '2025-03-28', customer: 'Sujan Shrestha', product: 'iPhone 15 Pro', amount: 148000, payment: 'eSewa', status: 'Paid' },
+    { invoice: 'INV-1023', date: '2025-03-28', customer: 'Bina Gurung', product: 'Samsung S24', amount: 118000, payment: 'Card', status: 'Partial' },
+    { invoice: 'INV-1022', date: '2025-03-27', customer: 'Rajesh Hamal', product: 'Redmi Note 13', amount: 32500, payment: 'Cash', status: 'Paid' },
+    { invoice: 'INV-1021', date: '2025-03-27', customer: 'Pooja K.C.', product: 'Samsung A55', amount: 54000, payment: 'Khalti', status: 'Paid' },
+    { invoice: 'INV-1020', date: '2025-03-26', customer: 'Anish Thapa', product: 'OnePlus 12', amount: 105000, payment: 'Bank', status: 'Paid' },
+    { invoice: 'INV-1019', date: '2025-03-26', customer: 'Sunita Rai', product: 'AirPods Pro 2', amount: 38500, payment: 'Cash', status: 'Paid' },
+    { invoice: 'INV-1018', date: '2025-03-25', customer: 'Bikash Lama', product: 'iPad 10th Gen', amount: 68000, payment: 'eSewa', status: 'Paid' },
+    { invoice: 'INV-1017', date: '2025-03-25', customer: 'Mina Shrestha', product: 'Samsung Watch 6', amount: 42000, payment: 'Card', status: 'Paid' },
+  ];
+
+  const salesHistory = [
+    { invoice: 'INV-1024', date: '2025-03-28', customer: 'Sujan Shrestha', items: 1, amount: 148000, payment: 'eSewa', status: 'Paid' },
+    { invoice: 'INV-1023', date: '2025-03-28', customer: 'Bina Gurung', items: 2, amount: 118000, payment: 'Card', status: 'Partial' },
+    { invoice: 'INV-1022', date: '2025-03-27', customer: 'Rajesh Hamal', items: 1, amount: 32500, payment: 'Cash', status: 'Paid' },
+    { invoice: 'INV-1021', date: '2025-03-27', customer: 'Pooja K.C.', items: 1, amount: 54000, payment: 'Khalti', status: 'Paid' },
+    { invoice: 'INV-1020', date: '2025-03-26', customer: 'Anish Thapa', items: 1, amount: 105000, payment: 'Bank', status: 'Paid' },
+    { invoice: 'INV-1019', date: '2025-03-26', customer: 'Sunita Rai', items: 1, amount: 38500, payment: 'Cash', status: 'Paid' },
+    { invoice: 'INV-1018', date: '2025-03-25', customer: 'Bikash Lama', items: 1, amount: 68000, payment: 'eSewa', status: 'Paid' },
+    { invoice: 'INV-1017', date: '2025-03-25', customer: 'Mina Shrestha', items: 1, amount: 42000, payment: 'Card', status: 'Paid' },
+    { invoice: 'INV-1016', date: '2025-03-24', customer: 'Sujan Shrestha', items: 3, amount: 12500, payment: 'Cash', status: 'Paid' },
+    { invoice: 'INV-1015', date: '2025-03-24', customer: 'Bina Gurung', items: 2, amount: 8500, payment: 'Khalti', status: 'Paid' },
+  ];
+
+  const expenseCategories = ['Rent', 'Electricity', 'Salary', 'Transport', 'Internet', 'Maintenance', 'Other'];
+  let expensesData = [
+    { id: 1, expense: 'Shop Rent', cat: 'Rent', amount: 45000, date: '2025-03-01', method: 'Bank', note: 'Monthly rent for March' },
+    { id: 2, expense: 'Staff Salary', cat: 'Salary', amount: 68000, date: '2025-03-05', method: 'Cash', note: 'Salaries for 4 staff' },
+    { id: 3, expense: 'Electricity', cat: 'Electricity', amount: 8500, date: '2025-03-10', method: 'eSewa', note: 'NEA bill' },
+    { id: 4, expense: 'Internet', cat: 'Internet', amount: 2500, date: '2025-03-12', method: 'Card', note: 'Worldlink monthly' },
+    { id: 5, expense: 'Delivery Van Fuel', cat: 'Transport', amount: 4500, date: '2025-03-15', method: 'Cash', note: 'Diesel' },
+    { id: 6, expense: 'Showroom Maintenance', cat: 'Maintenance', amount: 3200, date: '2025-03-18', method: 'Cash', note: 'AC servicing' },
+  ];
+
+  const purchaseData = [
+    { id: 1, supplier: 'Nepal Mobile Distributors', invoice: 'PO-101', products: 'iPhone 15 Pro (5)', qty: 5, amount: 675000, date: '2025-03-20', status: 'Received' },
+    { id: 2, supplier: 'Himalayan Telecom', invoice: 'PO-102', products: 'Samsung A55 (10)', qty: 10, amount: 480000, date: '2025-03-22', status: 'Pending' },
+    { id: 3, supplier: 'Everest Electronics', invoice: 'PO-103', products: 'Redmi Note 13 (20)', qty: 20, amount: 560000, date: '2025-03-18', status: 'Received' },
+    { id: 4, supplier: 'Apple Authorized Dist.', invoice: 'PO-104', products: 'iPhone 16 (8)', qty: 8, amount: 960000, date: '2025-03-15', status: 'Received' },
+    { id: 5, supplier: 'Samsung Nepal', invoice: 'PO-105', products: 'Galaxy S24 (6)', qty: 6, amount: 630000, date: '2025-03-12', status: 'Received' },
+  ];
+
+  // POS cart state
+  let cart = [];
+  let discountPercent = 0;
+
+  // ============================================================
+  // RENDER FUNCTIONS (page switching)
+  // ============================================================
+  const pageContent = document.getElementById('pageContent');
+  const pageTitle = document.getElementById('pageTitle');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+
+  function setActiveNav(pageId) {
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.remove('active');
+      if (el.dataset.page === pageId) el.classList.add('active');
+    });
+  }
+
+  function renderPage(page) {
+    setActiveNav(page);
+    const titles = {
+      dashboard: 'Dashboard', products: 'Products', inventory: 'Inventory',
+      pos: 'Sales / POS', salesHistory: 'Sales History', salesReturn: 'Sales Return',
+      customers: 'Customers', customerDue: 'Customer Due', suppliers: 'Suppliers',
+      purchases: 'Purchases', expenses: 'Expenses', reports: 'Reports', settings: 'Settings'
+    };
+    pageTitle.innerText = titles[page] || 'Dashboard';
+
+    if (page === 'dashboard') renderDashboard();
+    else if (page === 'products') renderProducts();
+    else if (page === 'inventory') renderInventory();
+    else if (page === 'pos') renderPOS();
+    else if (page === 'salesHistory') renderSalesHistory();
+    else if (page === 'salesReturn') renderSalesReturn();
+    else if (page === 'customers') renderCustomers();
+    else if (page === 'customerDue') renderCustomerDue();
+    else if (page === 'suppliers') renderSuppliers();
+    else if (page === 'purchases') renderPurchases();
+    else if (page === 'expenses') renderExpenses();
+    else if (page === 'reports') renderReports();
+    else if (page === 'settings') renderSettings();
+
+    if (window.innerWidth < 1024) closeSidebar();
+  }
+
+  // ---------- DASHBOARD ----------
+  function renderDashboard() {
+    const lowStock = products.filter(p => p.stock <= p.minStock && p.stock > 0);
+    const outOfStock = products.filter(p => p.stock === 0);
+    const totalStockValue = products.reduce((a,b) => a + (b.purchase * b.stock), 0);
+    const totalCustomers = customers.length;
+    const totalDue = customers.reduce((a,b) => a + b.due, 0);
+
+    pageContent.innerHTML = `
+      <div class="space-y-6">
+        <!-- Top KPI row -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+          <div class="card p-4">
+            <div class="flex items-center justify-between">
+              <p class="text-xs text-blue-500 font-medium">Today's Sales</p>
+              <i class="fas fa-arrow-up text-emerald-500 text-xs"></i>
+            </div>
+            <p class="text-xl lg:text-2xl font-semibold mt-1">Rs 3,52,500</p>
+            <p class="text-xs text-emerald-600 mt-1">+12.5% vs yesterday</p>
+          </div>
+          <div class="card p-4">
+            <div class="flex items-center justify-between">
+              <p class="text-xs text-blue-500 font-medium">Today's Purchase</p>
+              <i class="fas fa-arrow-down text-rose-500 text-xs"></i>
+            </div>
+            <p class="text-xl lg:text-2xl font-semibold mt-1">Rs 1,85,000</p>
+            <p class="text-xs text-rose-600 mt-1">-3.2% vs yesterday</p>
+          </div>
+          <div class="card p-4">
+            <div class="flex items-center justify-between">
+              <p class="text-xs text-blue-500 font-medium">Today's Profit</p>
+              <i class="fas fa-arrow-up text-emerald-500 text-xs"></i>
+            </div>
+            <p class="text-xl lg:text-2xl font-semibold mt-1 text-emerald-600">Rs 42,800</p>
+            <p class="text-xs text-emerald-600 mt-1">+8.1% vs yesterday</p>
+          </div>
+          <div class="card p-4">
+            <div class="flex items-center justify-between">
+              <p class="text-xs text-blue-500 font-medium">Total Customers</p>
+              <i class="fas fa-user-plus text-blue-500 text-xs"></i>
+            </div>
+            <p class="text-xl lg:text-2xl font-semibold mt-1">${totalCustomers}</p>
+            <p class="text-xs text-blue-500 mt-1">+2 this week</p>
+          </div>
+        </div>
+
+        <!-- Secondary KPI row -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
+          <div class="card p-4">
+            <p class="text-xs text-blue-500 font-medium">Total Products</p>
+            <p class="text-xl font-semibold mt-1">${products.length}</p>
+          </div>
+          <div class="card p-4">
+            <p class="text-xs text-blue-500 font-medium">Total Stock</p>
+            <p class="text-xl font-semibold mt-1">${products.reduce((a,b)=>a+b.stock,0)}</p>
+          </div>
+          <div class="card p-4">
+            <p class="text-xs text-blue-500 font-medium">Stock Value</p>
+            <p class="text-xl font-semibold mt-1">Rs ${(totalStockValue/100000).toFixed(1)}L</p>
+          </div>
+          <div class="card p-4">
+            <p class="text-xs text-blue-500 font-medium">Low Stock</p>
+            <p class="text-xl font-semibold mt-1 text-amber-600">${lowStock.length}</p>
+          </div>
+          <div class="card p-4">
+            <p class="text-xs text-blue-500 font-medium">Customer Due</p>
+            <p class="text-xl font-semibold mt-1 text-rose-600">Rs ${totalDue.toLocaleString()}</p>
+          </div>
+        </div>
+
+        <!-- charts row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="card p-5 lg:col-span-2">
+            <div class="flex justify-between items-center mb-3">
+              <p class="font-medium text-slate-700">Sales Overview (last 7 days)</p>
+              <select class="text-xs border border-blue-100 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-200 outline-none">
+                <option>Weekly</option><option>Monthly</option>
+              </select>
+            </div>
+            <canvas id="salesChart" height="160" style="width:100%; max-height:180px;"></canvas>
+          </div>
+          <div class="card p-5">
+            <p class="font-medium text-slate-700 mb-3">Sales by Category</p>
+            <canvas id="topProductsChart" height="160" style="width:100%; max-height:180px;"></canvas>
+          </div>
+        </div>
+
+        <!-- recent sales + low stock -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="card lg:col-span-2 p-0 overflow-hidden">
+            <div class="px-5 py-4 border-b border-blue-50 flex justify-between items-center">
+              <p class="font-medium text-slate-700">Recent Sales</p>
+              <span class="text-xs text-blue-500 cursor-pointer hover:underline" onclick="renderPage('salesHistory')">View all →</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-blue-50/70 text-blue-800 text-xs uppercase tracking-wider">
+                  <tr><th class="px-4 py-3 text-left">Invoice</th><th class="px-4 py-3 text-left">Customer</th><th class="px-4 py-3 text-left">Product</th><th class="px-4 py-3 text-right">Amount</th><th class="px-4 py-3 text-left">Payment</th><th class="px-4 py-3 text-left">Status</th></tr>
+                </thead>
+                <tbody>
+                  ${recentSales.slice(0, 6).map(s => `
+                    <tr class="table-row-hover border-b border-blue-50">
+                      <td class="px-4 py-3 font-medium text-blue-700">${s.invoice}</td>
+                      <td class="px-4 py-3">${s.customer}</td>
+                      <td class="px-4 py-3 text-slate-600">${s.product}</td>
+                      <td class="px-4 py-3 text-right font-medium">Rs ${s.amount.toLocaleString()}</td>
+                      <td class="px-4 py-3"><span class="badge badge-info">${s.payment}</span></td>
+                      <td class="px-4 py-3"><span class="badge ${s.status==='Paid'?'badge-success':'badge-warning'}">${s.status}</span></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card p-0 overflow-hidden">
+            <div class="px-5 py-4 border-b border-blue-50 flex justify-between items-center">
+              <p class="font-medium text-slate-700">Low Stock Alert</p>
+              <span class="badge badge-warning">${lowStock.length} items</span>
+            </div>
+            <div class="divide-y divide-blue-50 max-h-80 overflow-y-auto">
+              ${lowStock.map(p => `
+                <div class="px-5 py-3 flex justify-between items-center text-sm">
+                  <div><p class="font-medium">${p.name}</p><p class="text-xs text-blue-400">IMEI: ${p.imei.slice(-6)}</p></div>
+                  <span class="badge badge-danger">${p.stock} left</span>
+                </div>
+              `).join('')}
+              ${lowStock.length === 0 ? '<div class="p-5 text-sm text-slate-400 text-center">No low stock items</div>' : ''}
+            </div>
+          </div>
+        </div>
+
+        <!-- Top selling + Brand distribution -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div class="card p-5">
+            <p class="font-medium text-slate-700 mb-3">Top Selling Products</p>
+            <canvas id="topSellingChart" height="120"></canvas>
+          </div>
+          <div class="card p-5">
+            <p class="font-medium text-slate-700 mb-3">Brand Distribution</p>
+            <canvas id="brandChart" height="120"></canvas>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // charts
+    setTimeout(() => {
+      const ctx1 = document.getElementById('salesChart')?.getContext('2d');
+      if (ctx1) {
+        new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+              label: 'Sales (Rs)',
+              data: [28500, 32400, 25800, 35850, 41200, 48500, 52000],
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37, 99, 235, 0.06)',
+              tension: 0.3,
+              fill: true,
+              pointBackgroundColor: '#2563eb',
+            }]
+          },
+          options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } } }
+        });
+      }
+      const ctx2 = document.getElementById('topProductsChart')?.getContext('2d');
+      if (ctx2) {
+        new Chart(ctx2, {
+          type: 'doughnut',
+          data: {
+            labels: ['iPhone', 'Samsung', 'Xiaomi', 'Accessories', 'Others'],
+            datasets: [{
+              data: [30, 22, 18, 20, 10],
+              backgroundColor: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#dbeafe'],
+              borderWidth: 0,
+            }]
+          },
+          options: { cutout: '70%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10 } } } } }
+        });
+      }
+      const ctx3 = document.getElementById('topSellingChart')?.getContext('2d');
+      if (ctx3) {
+        new Chart(ctx3, {
+          type: 'bar',
+          data: {
+            labels: ['iPhone 15 Pro', 'Samsung S24', 'Redmi Note 13', 'AirPods Pro', 'Samsung A55'],
+            datasets: [{
+              label: 'Units Sold',
+              data: [42, 35, 28, 22, 18],
+              backgroundColor: '#2563eb',
+              borderRadius: 6,
+            }]
+          },
+          options: { indexAxis: 'y', plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: true }
+        });
+      }
+      const ctx4 = document.getElementById('brandChart')?.getContext('2d');
+      if (ctx4) {
+        new Chart(ctx4, {
+          type: 'doughnut',
+          data: {
+            labels: ['Apple', 'Samsung', 'Xiaomi', 'OnePlus', 'Others'],
+            datasets: [{
+              data: [35, 28, 18, 10, 9],
+              backgroundColor: ['#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'],
+              borderWidth: 0,
+            }]
+          },
+          options: { cutout: '65%', plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 10 } } } } }
+        });
+      }
+    }, 50);
+  }
+
+  // ---------- PRODUCTS ----------
+  function renderProducts() {
+    const categories = [...new Set(products.map(p => p.category))];
+    const brands = [...new Set(products.map(p => p.brand))];
+
+    pageContent.innerHTML = `
+      <div class="space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="relative"><i class="fas fa-search absolute left-3 top-2.5 text-blue-400 text-sm"></i><input id="productSearch" type="text" placeholder="Search products..." class="pl-9 pr-4 py-2 text-sm bg-white border border-blue-100 rounded-xl w-48 lg:w-56 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+            <select id="categoryFilter" class="text-sm bg-white border border-blue-100 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-200 outline-none"><option value="all">All Categories</option>${categories.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+            <select id="brandFilter" class="text-sm bg-white border border-blue-100 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-200 outline-none"><option value="all">All Brands</option>${brands.map(b => `<option value="${b}">${b}</option>`).join('')}</select>
+            <select id="stockFilter" class="text-sm bg-white border border-blue-100 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-200 outline-none"><option value="all">All Stock</option><option value="in">In Stock</option><option value="low">Low Stock</option><option value="out">Out of Stock</option></select>
+          </div>
+          <button id="addProductBtn" class="btn-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition shadow-sm shadow-blue-200"><i class="fas fa-plus"></i> Add Product</button>
+        </div>
+
+        <div class="card p-0 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-blue-50/70 text-blue-800 text-xs uppercase tracking-wider">
+                <tr>
+                  <th class="px-4 py-3 text-left">Product</th>
+                  <th class="px-4 py-3 text-left">Brand</th>
+                  <th class="px-4 py-3 text-left">Category</th>
+                  <th class="px-4 py-3 text-left">SKU</th>
+                  <th class="px-4 py-3 text-left">IMEI</th>
+                  <th class="px-4 py-3 text-right">Purchase</th>
+                  <th class="px-4 py-3 text-right">Selling</th>
+                  <th class="px-4 py-3 text-right">Margin</th>
+                  <th class="px-4 py-3 text-right">Stock</th>
+                  <th class="px-4 py-3 text-left">Status</th>
+                  <th class="px-4 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="productsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="flex justify-between items-center text-xs text-slate-400">
+          <span>Showing <span id="productCount">${products.length}</span> products</span>
+          <span>Page 1 of 1</span>
+        </div>
+      </div>
+    `;
+
+    function renderTableRows(filterText = '', category = 'all', brand = 'all', stockFilter = 'all') {
+      const tbody = document.getElementById('productsTableBody');
+      if (!tbody) return;
+      let filtered = products.filter(p => {
+        const matchSearch = p.name.toLowerCase().includes(filterText.toLowerCase()) || p.imei.includes(filterText) || p.sku.toLowerCase().includes(filterText.toLowerCase());
+        const matchCat = category === 'all' || p.category === category;
+        const matchBrand = brand === 'all' || p.brand === brand;
+        let matchStock = true;
+        if (stockFilter === 'in') matchStock = p.stock > p.minStock;
+        else if (stockFilter === 'low') matchStock = p.stock <= p.minStock && p.stock > 0;
+        else if (stockFilter === 'out') matchStock = p.stock === 0;
+        return matchSearch && matchCat && matchBrand && matchStock;
+      });
+      document.getElementById('productCount').innerText = filtered.length;
+      tbody.innerHTML = filtered.map(p => {
+        const stockStatus = p.stock <= 0 ? 'Out of Stock' : (p.stock <= p.minStock ? 'Low Stock' : 'In Stock');
+        const badgeClass = p.stock <= 0 ? 'badge-danger' : (p.stock <= p.minStock ? 'badge-warning' : 'badge-success');
+        const margin = ((p.selling - p.purchase) / p.purchase * 100).toFixed(1);
+        return `<tr class="table-row-hover border-b border-blue-50">
+          <td class="px-4 py-3 font-medium">${p.name}</td>
+          <td class="px-4 py-3">${p.brand}</td>
+          <td class="px-4 py-3 text-slate-500">${p.category}</td>
+          <td class="px-4 py-3 text-slate-500 text-xs">${p.sku}</td>
+          <td class="px-4 py-3 text-slate-500 font-mono text-xs">${p.imei}</td>
+          <td class="px-4 py-3 text-right">Rs ${p.purchase.toLocaleString()}</td>
+          <td class="px-4 py-3 text-right font-medium">Rs ${p.selling.toLocaleString()}</td>
+          <td class="px-4 py-3 text-right text-emerald-600 font-medium">${margin}%</td>
+          <td class="px-4 py-3 text-right">${p.stock}</td>
+          <td class="px-4 py-3"><span class="badge ${badgeClass}">${stockStatus}</span></td>
+          <td class="px-4 py-3 text-right">
+            <i class="fas fa-edit text-blue-400 hover:text-blue-600 cursor-pointer mr-2" onclick="editProduct(${p.id})"></i>
+            <i class="fas fa-trash text-rose-300 hover:text-rose-500 cursor-pointer" onclick="deleteProduct(${p.id})"></i>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    window.editProduct = (id) => {
+      const p = products.find(x => x.id === id);
+      showModal('Edit Product (Demo)', `
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <input value="${p.name}" class="border border-blue-100 rounded-lg p-2 col-span-2 focus:ring-2 focus:ring-blue-200 outline-none" id="editName">
+          <input value="${p.brand}" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="editBrand">
+          <input value="${p.selling}" type="number" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="editSelling">
+        </div>
+      `, () => {
+        p.name = document.getElementById('editName')?.value || p.name;
+        p.brand = document.getElementById('editBrand')?.value || p.brand;
+        p.selling = parseInt(document.getElementById('editSelling')?.value) || p.selling;
+        renderProducts();
+        showToast('Product updated (demo)');
+      });
+    };
+
+    window.deleteProduct = (id) => {
+      showModal('Confirm Delete', `<p class="text-sm text-slate-600">Are you sure you want to delete this product? This action cannot be undone.</p>`, () => {
+        const idx = products.findIndex(p => p.id === id);
+        if (idx > -1) products.splice(idx, 1);
+        renderProducts();
+        showToast('Product deleted (demo)');
+      });
+    };
+
+    renderTableRows();
+
+    document.getElementById('productSearch')?.addEventListener('input', (e) => {
+      renderTableRows(e.target.value, document.getElementById('categoryFilter').value, document.getElementById('brandFilter').value, document.getElementById('stockFilter').value);
+    });
+    document.getElementById('categoryFilter')?.addEventListener('change', (e) => {
+      renderTableRows(document.getElementById('productSearch').value, e.target.value, document.getElementById('brandFilter').value, document.getElementById('stockFilter').value);
+    });
+    document.getElementById('brandFilter')?.addEventListener('change', (e) => {
+      renderTableRows(document.getElementById('productSearch').value, document.getElementById('categoryFilter').value, e.target.value, document.getElementById('stockFilter').value);
+    });
+    document.getElementById('stockFilter')?.addEventListener('change', (e) => {
+      renderTableRows(document.getElementById('productSearch').value, document.getElementById('categoryFilter').value, document.getElementById('brandFilter').value, e.target.value);
+    });
+
+    document.getElementById('addProductBtn')?.addEventListener('click', () => {
+      showModal('Add Product (Demo)', `
+        <div class="grid grid-cols-2 gap-3 text-sm max-h-96 overflow-y-auto pr-1">
+          <input placeholder="Product Name" class="border border-blue-100 rounded-lg p-2 col-span-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdName">
+          <input placeholder="Brand" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdBrand">
+          <input placeholder="Model" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdModel">
+          <input placeholder="SKU" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdSku">
+          <input placeholder="IMEI" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdImei">
+          <select class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdCategory">
+            <option>Phone</option><option>Accessory</option><option>Wearable</option><option>Tablet</option>
+          </select>
+          <input placeholder="Storage" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdStorage">
+          <input placeholder="RAM" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdRam">
+          <input placeholder="Color" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdColor">
+          <input placeholder="Warranty" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdWarranty">
+          <input placeholder="Purchase Price" type="number" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdPurchase">
+          <input placeholder="Selling Price" type="number" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdSelling">
+          <input placeholder="Stock" type="number" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdStock">
+          <input placeholder="Min Stock" type="number" class="border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="newProdMinStock">
+        </div>
+      `, () => {
+        const name = document.getElementById('newProdName')?.value || 'New Product';
+        const brand = document.getElementById('newProdBrand')?.value || 'Generic';
+        const model = document.getElementById('newProdModel')?.value || 'X';
+        const sku = document.getElementById('newProdSku')?.value || `NEW-${products.length + 1}`;
+        const imei = document.getElementById('newProdImei')?.value || '356789012345' + Math.floor(Math.random()*900+100);
+        const category = document.getElementById('newProdCategory')?.value || 'Phone';
+        const storage = document.getElementById('newProdStorage')?.value || '128GB';
+        const ram = document.getElementById('newProdRam')?.value || '8GB';
+        const color = document.getElementById('newProdColor')?.value || 'Black';
+        const warranty = document.getElementById('newProdWarranty')?.value || '1yr';
+        const purchase = parseInt(document.getElementById('newProdPurchase')?.value) || 30000;
+        const selling = parseInt(document.getElementById('newProdSelling')?.value) || 35000;
+        const stock = parseInt(document.getElementById('newProdStock')?.value) || 5;
+        const minStock = parseInt(document.getElementById('newProdMinStock')?.value) || 2;
+        const newId = Math.max(...products.map(p => p.id)) + 1;
+        products.push({ id: newId, name, brand, model, sku, imei, purchase, selling, stock, minStock, category, storage, ram, color, warranty });
+        renderProducts();
+        showToast('Product added successfully (demo)');
+      });
+    });
+  }
+
+  // ---------- INVENTORY ----------
+  function renderInventory() {
+    const totalStock = products.reduce((a,b) => a + b.stock, 0);
+    const stockValue = products.reduce((a,b) => a + (b.purchase * b.stock), 0);
+    const retailValue = products.reduce((a,b) => a + (b.selling * b.stock), 0);
+    const lowStock = products.filter(p => p.stock <= p.minStock && p.stock > 0);
+    const outOfStock = products.filter(p => p.stock === 0);
+
+    pageContent.innerHTML = `
+      <div class="space-y-6">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div class="card p-5"><p class="text-xs text-blue-500 font-medium">Total Stock</p><p class="text-2xl font-semibold">${totalStock}</p></div>
+          <div class="card p-5"><p class="text-xs text-blue-500 font-medium">Cost Value</p><p class="text-2xl font-semibold">Rs ${(stockValue/100000).toFixed(2)}L</p></div>
+          <div class="card p-5"><p class="text-xs text-blue-500 font-medium">Retail Value</p><p class="text-2xl font-semibold">Rs ${(retailValue/100000).toFixed(2)}L</p></div>
+          <div class="card p-5"><p class="text-xs text-blue-500 font-medium">Low Stock</p><p class="text-2xl font-semibold text-amber-600">${lowStock.length}</p></div>
+          <div class="card p-5"><p class="text-xs text-blue-500 font-medium">Out of Stock</p><p class="text-2xl font-semibold text-rose-600">${outOfStock.length}</p></div>
+        </div>
+
+        <div class="flex gap-2 flex-wrap">
+          <button class="stock-tab text-sm btn-primary text-white px-4 py-1.5 rounded-lg" data-filter="all">All Products</button>
+          <button class="stock-tab text-sm bg-white border border-blue-100 px-4 py-1.5 rounded-lg" data-filter="low">Low Stock</button>
+          <button class="stock-tab text-sm bg-white border border-blue-100 px-4 py-1.5 rounded-lg" data-filter="out">Out of Stock</button>
+        </div>
+
+        <div class="card p-0 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-blue-50/70 text-blue-800 text-xs uppercase tracking-wider">
+                <tr>
+                  <th class="px-5 py-3 text-left">Product</th>
+                  <th class="px-5 py-3 text-left">Category</th>
+                  <th class="px-5 py-3 text-left">IMEI</th>
+                  <th class="px-5 py-3 text-right">Stock</th>
+                  <th class="px-5 py-3 text-right">Min Stock</th>
+                  <th class="px-5 py-3 text-right">Cost</th>
+                  <th class="px-5 py-3 text-right">Value</th>
+                  <th class="px-5 py-3 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    function renderInventoryRows(filter = 'all') {
+      const tbody = document.getElementById('inventoryTableBody');
+      if (!tbody) return;
+      let filtered = products;
+      if (filter === 'low') filtered = products.filter(p => p.stock <= p.minStock && p.stock > 0);
+      else if (filter === 'out') filtered = products.filter(p => p.stock === 0);
+      tbody.innerHTML = filtered.map(p => {
+        const status = p.stock <= 0 ? 'Out of Stock' : (p.stock <= p.minStock ? 'Low Stock' : 'In Stock');
+        const badge = p.stock <= 0 ? 'badge-danger' : (p.stock <= p.minStock ? 'badge-warning' : 'badge-success');
+        return `<tr class="border-b border-blue-50 table-row-hover">
+          <td class="px-5 py-3 font-medium">${p.name}</td>
+          <td class="px-5 py-3 text-slate-500">${p.category}</td>
+          <td class="px-5 py-3 font-mono text-xs">${p.imei}</td>
+          <td class="px-5 py-3 text-right">${p.stock}</td>
+          <td class="px-5 py-3 text-right">${p.minStock}</td>
+          <td class="px-5 py-3 text-right">Rs ${p.purchase.toLocaleString()}</td>
+          <td class="px-5 py-3 text-right font-medium">Rs ${(p.purchase * p.stock).toLocaleString()}</td>
+          <td class="px-5 py-3"><span class="badge ${badge}">${status}</span></td>
+        </tr>`;
+      }).join('');
+    }
+
+    renderInventoryRows();
+
+    document.querySelectorAll('.stock-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.stock-tab').forEach(t => { t.classList.remove('btn-primary', 'text-white'); t.classList.add('bg-white', 'border', 'border-blue-100'); });
+        tab.classList.add('btn-primary', 'text-white');
+        tab.classList.remove('bg-white', 'border', 'border-blue-100');
+        renderInventoryRows(tab.dataset.filter);
+      });
+    });
+  }
+
+  // ---------- POS / SALES ----------
+  function renderPOS() {
+    const categories = ['All', ...new Set(products.filter(p => p.stock > 0).map(p => p.category))];
+    const posProducts = products.filter(p => p.stock > 0);
+
+    pageContent.innerHTML = `
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
+        <!-- left products -->
+        <div class="xl:col-span-2 space-y-4">
+          <div class="relative"><i class="fas fa-search absolute left-3 top-3 text-blue-400 text-sm"></i><input id="posSearch" type="text" placeholder="Search product by name, IMEI, SKU..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-blue-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-200 outline-none"></div>
+          
+          <div class="flex gap-2 overflow-x-auto pb-1" id="categoryPills">
+            ${categories.map(c => `<button class="cat-pill ${c === 'All' ? 'active' : ''} px-3 py-1.5 text-xs rounded-full bg-white text-slate-600 whitespace-nowrap border border-blue-100" data-cat="${c}">${c}</button>`).join('')}
+          </div>
+
+          <div id="posProductGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[65vh] overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- right cart -->
+        <div class="card p-0 flex flex-col h-fit max-h-[85vh] sticky top-4">
+          <div class="p-4 border-b border-blue-50 flex justify-between items-center">
+            <div>
+              <p class="font-medium">Current Sale</p>
+              <p class="text-xs text-blue-400" id="cartItemCount">0 items</p>
+            </div>
+            <button id="clearCartBtn" class="text-xs text-blue-400 hover:text-rose-500"><i class="fas fa-trash-alt mr-1"></i>Clear</button>
+          </div>
+          <div class="p-3 border-b border-blue-50">
+            <label class="text-xs text-blue-500 font-medium">Customer</label>
+            <select id="customerSelect" class="w-full border border-blue-100 rounded-lg px-2 py-1.5 text-sm mt-1 focus:ring-2 focus:ring-blue-200 outline-none">
+              <option>Walk-in Customer</option>
+              ${customers.map(c => `<option>${c.name} (${c.phone})</option>`).join('')}
+              <option>+ Add New Customer</option>
+            </select>
+          </div>
+          <div id="cartItems" class="p-3 space-y-2 overflow-y-auto flex-1 max-h-64"></div>
+          <div class="border-t border-blue-100 p-4 space-y-2 bg-blue-50/40">
+            <div class="flex justify-between text-sm"><span>Subtotal</span><span id="cartSubtotal">Rs 0</span></div>
+            <div class="flex justify-between items-center text-sm"><span>Discount</span><div class="flex items-center gap-2"><input id="discountInput" type="number" value="0" min="0" max="100" class="w-16 border border-blue-200 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-200 outline-none">%</div></div>
+            <div class="flex justify-between text-sm"><span>Tax (13%)</span><span id="cartTax">Rs 0</span></div>
+            <div class="flex justify-between font-semibold text-lg border-t border-blue-100 pt-2"><span>Total</span><span id="cartTotal" class="text-blue-700">Rs 0</span></div>
+            <div class="grid grid-cols-2 gap-2">
+              <div><label class="text-xs text-blue-500">Paid</label><input id="paidInput" type="number" value="0" class="w-full border border-blue-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none"></div>
+              <div><label class="text-xs text-blue-500">Change</label><p id="changeDisplay" class="text-sm font-medium pt-1.5 text-emerald-600">Rs 0</p></div>
+            </div>
+            <div class="flex justify-between items-center"><span class="text-sm">Payment</span><select id="paymentMethod" class="border border-blue-200 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 outline-none"><option>Cash</option><option>Card</option><option>eSewa</option><option>Khalti</option><option>Bank</option><option>Credit</option></select></div>
+            <button id="completeSaleBtn" class="w-full btn-primary text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 shadow-sm shadow-blue-200"><i class="fas fa-check-circle"></i> Complete Sale</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    let currentSearch = '';
+    let currentCategory = 'All';
+
+    function renderPosProducts() {
+      const grid = document.getElementById('posProductGrid');
+      if (!grid) return;
+      const filtered = posProducts.filter(p => {
+        const matchSearch = p.name.toLowerCase().includes(currentSearch.toLowerCase()) || p.imei.includes(currentSearch) || p.sku.toLowerCase().includes(currentSearch.toLowerCase());
+        const matchCat = currentCategory === 'All' || p.category === currentCategory;
+        return matchSearch && matchCat;
+      });
+      grid.innerHTML = filtered.map(p => `
+        <div class="product-card bg-white p-4 rounded-xl flex flex-col" data-id="${p.id}">
+          <div class="flex justify-between items-start"><p class="font-medium">${p.name}</p><span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">${p.stock} left</span></div>
+          <p class="text-xs text-blue-400 mt-0.5">IMEI: ${p.imei.slice(-8)}</p>
+          <p class="text-xs text-slate-500">${p.brand} · ${p.storage}</p>
+          <p class="text-lg font-semibold mt-2 text-blue-700">Rs ${p.selling.toLocaleString()}</p>
+          <button class="add-to-cart mt-2 text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 py-1.5 rounded-lg transition" data-id="${p.id}">+ Add to cart</button>
+        </div>
+      `).join('');
+      document.querySelectorAll('.add-to-cart').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = parseInt(btn.dataset.id);
+          const prod = products.find(p => p.id === id);
+          if (prod && prod.stock > 0) {
+            const existing = cart.find(c => c.id === id);
+            if (existing) { if (existing.qty < prod.stock) existing.qty += 1; else { showToast('Stock limit reached', 'warning'); return; } }
+            else cart.push({ ...prod, qty: 1 });
+            updateCartUI();
+            showToast(`${prod.name} added to cart`, 'success');
+          }
+        });
+      });
+    }
+
+    renderPosProducts();
+    document.getElementById('posSearch')?.addEventListener('input', (e) => {
+      currentSearch = e.target.value;
+      renderPosProducts();
+    });
+
+    document.querySelectorAll('.cat-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.cat-pill').forEach(p => { p.classList.remove('active'); p.classList.add('bg-white', 'text-slate-600'); });
+        pill.classList.add('active');
+        pill.classList.remove('bg-white', 'text-slate-600');
+        currentCategory = pill.dataset.cat;
+        renderPosProducts();
+      });
+    });
+
+    // customer select handling
+    document.getElementById('customerSelect')?.addEventListener('change', (e) => {
+      if (e.target.value === '+ Add New Customer') {
+        showModal('Add New Customer', `
+          <div class="space-y-3 text-sm">
+            <input id="posNewCustName" placeholder="Customer Name" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none">
+            <input id="posNewCustPhone" placeholder="Phone Number" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none">
+            <input id="posNewCustAddress" placeholder="Address (optional)" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none">
+          </div>
+        `, () => {
+          const name = document.getElementById('posNewCustName')?.value || 'New Customer';
+          const phone = document.getElementById('posNewCustPhone')?.value || '9800000000';
+          const address = document.getElementById('posNewCustAddress')?.value || 'Kathmandu';
+          customers.push({ id: customers.length + 1, name, phone, email: '', address, totalPurchase: 0, paid: 0, due: 0, lastPurchase: '-', status: 'Active' });
+          renderPOS();
+          showToast(`Customer ${name} added (demo)`);
+        });
+        e.target.value = 'Walk-in Customer';
+      }
+    });
+
+    // cart UI
+    window.updateCartUI = function() {
+      const cartContainer = document.getElementById('cartItems');
+      if (!cartContainer) return;
+      document.getElementById('cartItemCount').innerText = `${cart.reduce((a,b) => a + b.qty, 0)} items`;
+      if (cart.length === 0) {
+        cartContainer.innerHTML = `<div class="text-center text-blue-300 text-sm py-8"><i class="fas fa-shopping-bag text-2xl mb-2 opacity-40"></i><p>Cart is empty</p></div>`;
+      } else {
+        cartContainer.innerHTML = cart.map((item, idx) => `
+          <div class="flex items-center justify-between gap-2 bg-white p-2 rounded-lg border border-blue-100">
+            <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">${item.name}</p><p class="text-xs text-blue-400">Rs ${item.selling.toLocaleString()}</p></div>
+            <div class="flex items-center gap-1"><button class="qty-minus w-6 h-6 rounded-md bg-blue-50 text-sm hover:bg-blue-100" data-idx="${idx}">-</button><span class="w-6 text-center text-sm">${item.qty}</span><button class="qty-plus w-6 h-6 rounded-md bg-blue-50 text-sm hover:bg-blue-100" data-idx="${idx}">+</button></div>
+            <div class="text-sm font-medium w-20 text-right">Rs ${(item.selling * item.qty).toLocaleString()}</div>
+            <i class="fas fa-times text-blue-200 hover:text-rose-500 cursor-pointer remove-item" data-idx="${idx}"></i>
+          </div>
+        `).join('');
+        document.querySelectorAll('.qty-minus').forEach(btn => btn.addEventListener('click', (e) => { const idx = e.target.dataset.idx; if (cart[idx].qty > 1) cart[idx].qty -= 1; else cart.splice(idx,1); updateCartUI(); }));
+        document.querySelectorAll('.qty-plus').forEach(btn => btn.addEventListener('click', (e) => { const idx = e.target.dataset.idx; const product = products.find(p => p.id === cart[idx].id); if (cart[idx].qty < product.stock) cart[idx].qty += 1; else showToast('Stock limit', 'warning'); updateCartUI(); }));
+        document.querySelectorAll('.remove-item').forEach(btn => btn.addEventListener('click', (e) => { const idx = e.target.dataset.idx; cart.splice(idx,1); updateCartUI(); }));
+      }
+      const subtotal = cart.reduce((a,b) => a + (b.selling * b.qty), 0);
+      const discountVal = parseFloat(document.getElementById('discountInput')?.value) || 0;
+      const discountAmt = subtotal * (discountVal / 100);
+      const taxable = subtotal - discountAmt;
+      const tax = taxable * 0.13;
+      const total = taxable + tax;
+      const paid = parseFloat(document.getElementById('paidInput')?.value) || 0;
+      const change = paid - total;
+      if (document.getElementById('cartSubtotal')) document.getElementById('cartSubtotal').innerText = `Rs ${subtotal.toLocaleString()}`;
+      if (document.getElementById('cartTax')) document.getElementById('cartTax').innerText = `Rs ${Math.round(tax).toLocaleString()}`;
+      if (document.getElementById('cartTotal')) document.getElementById('cartTotal').innerText = `Rs ${Math.round(total).toLocaleString()}`;
+      if (document.getElementById('changeDisplay')) document.getElementById('changeDisplay').innerText = `Rs ${change > 0 ? change.toFixed(0) : 0}`;
+    };
+
+    document.getElementById('discountInput')?.addEventListener('input', updateCartUI);
+    document.getElementById('paidInput')?.addEventListener('input', updateCartUI);
+    document.getElementById('clearCartBtn')?.addEventListener('click', () => { cart = []; updateCartUI(); showToast('Cart cleared', 'info'); });
+    document.getElementById('completeSaleBtn')?.addEventListener('click', () => {
+      if (cart.length === 0) { showToast('Cart is empty', 'warning'); return; }
+      // decrease stock
+      cart.forEach(item => {
+        const prod = products.find(p => p.id === item.id);
+        if (prod) prod.stock = Math.max(0, prod.stock - item.qty);
+      });
+      const total = cart.reduce((a,b) => a + (b.selling * b.qty), 0);
+      showToast(`Sale completed! Rs ${Math.round(total).toLocaleString()} (demo)`, 'success');
+      cart = [];
+      updateCartUI();
+      renderPosProducts();
+    });
+
+    updateCartUI();
+  }
+
+  // ---------- SALES HISTORY ----------
+  function renderSalesHistory() {
+    pageContent.innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-2">
+          <div class="relative"><i class="fas fa-search absolute left-3 top-2.5 text-blue-400 text-sm"></i><input type="text" placeholder="Search invoices..." class="pl-9 pr-4 py-2 text-sm bg-white border border-blue-100 rounded-xl w-56 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+          <input type="date" class="text-sm bg-white border border-blue-100 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-200 outline-none">
+        </div>
+        <button class="btn-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm shadow-blue-200"><i class="fas fa-download"></i> Export</button>
+      </div>
+      <div class="card p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-blue-50/70 text-blue-800 text-xs uppercase tracking-wider">
+              <tr>
+                <th class="px-4 py-3 text-left">Invoice</th>
+                <th class="px-4 py-3 text-left">Date</th>
+                <th class="px-4 py-3 text-left">Customer</th>
+                <th class="px-4 py-3 text-right">Items</th>
+                <th class="px-4 py-3 text-right">Amount</th>
+                <th class="px-4 py-3 text-left">Payment</th>
+                <th class="px-4 py-3 text-left">Status</th>
+                <th class="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${salesHistory.map(s => `
+                <tr class="border-b border-blue-50 table-row-hover">
+                  <td class="px-4 py-3 font-medium text-blue-700">${s.invoice}</td>
+                  <td class="px-4 py-3 text-slate-500">${s.date}</td>
+                  <td class="px-4 py-3">${s.customer}</td>
+                  <td class="px-4 py-3 text-right">${s.items}</td>
+                  <td class="px-4 py-3 text-right font-medium">Rs ${s.amount.toLocaleString()}</td>
+                  <td class="px-4 py-3"><span class="badge badge-info">${s.payment}</span></td>
+                  <td class="px-4 py-3"><span class="badge ${s.status==='Paid'?'badge-success':'badge-warning'}">${s.status}</span></td>
+                  <td class="px-4 py-3 text-right">
+                    <i class="fas fa-eye text-blue-400 hover:text-blue-600 cursor-pointer mr-2" title="View"></i>
+                    <i class="fas fa-print text-blue-400 hover:text-blue-600 cursor-pointer mr-2" title="Print"></i>
+                    <i class="fas fa-undo text-amber-400 hover:text-amber-600 cursor-pointer" title="Return" onclick="renderPage('salesReturn')"></i>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-between items-center text-xs text-slate-400 mt-4">
+        <span>Showing 1-10 of 10 invoices</span>
+        <div class="flex gap-1">
+          <button class="px-2 py-1 border border-blue-100 rounded bg-white">Prev</button>
+          <button class="px-2 py-1 border border-blue-100 rounded bg-blue-500 text-white">1</button>
+          <button class="px-2 py-1 border border-blue-100 rounded bg-white">Next</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ---------- SALES RETURN ----------
+  function renderSalesReturn() {
+    pageContent.innerHTML = `
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 card p-5">
+          <h3 class="font-medium text-slate-700 mb-4">Select Invoice to Return</h3>
+          <div class="space-y-2 max-h-96 overflow-y-auto">
+            ${salesHistory.slice(0, 5).map(s => `
+              <div class="flex items-center justify-between p-3 border border-blue-100 rounded-xl hover:bg-blue-50 cursor-pointer return-invoice" data-invoice="${s.invoice}">
+                <div>
+                  <p class="font-medium">${s.invoice} · ${s.customer}</p>
+                  <p class="text-xs text-blue-400">${s.date} · ${s.items} items</p>
+                </div>
+                <span class="font-medium text-blue-700">Rs ${s.amount.toLocaleString()}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="card p-5">
+          <h3 class="font-medium text-slate-700 mb-4">Return Details</h3>
+          <div class="space-y-3 text-sm">
+            <div><label class="text-xs text-blue-500">Invoice</label><input id="returnInvoice" readonly class="w-full border border-blue-100 rounded-lg p-2 mt-1 bg-slate-50 text-sm" placeholder="Select invoice"></div>
+            <div><label class="text-xs text-blue-500">Product</label><select id="returnProduct" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"><option>Select product</option>${products.slice(0,5).map(p => `<option>${p.name}</option>`).join('')}</select></div>
+            <div><label class="text-xs text-blue-500">Quantity</label><input id="returnQty" type="number" value="1" min="1" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+            <div><label class="text-xs text-blue-500">Reason</label><select class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"><option>Defective</option><option>Wrong item</option><option>Customer changed mind</option><option>Other</option></select></div>
+            <div><label class="text-xs text-blue-500">Refund Method</label><select class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"><option>Cash</option><option>eSewa</option><option>Khalti</option><option>Bank</option></select></div>
+            <button id="processReturnBtn" class="w-full btn-primary text-white py-2.5 rounded-xl font-medium mt-2 shadow-sm shadow-blue-200"><i class="fas fa-undo mr-1"></i> Process Return</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.querySelectorAll('.return-invoice').forEach(el => {
+      el.addEventListener('click', () => {
+        document.getElementById('returnInvoice').value = el.dataset.invoice;
+      });
+    });
+
+    document.getElementById('processReturnBtn')?.addEventListener('click', () => {
+      const inv = document.getElementById('returnInvoice')?.value;
+      if (!inv) { showToast('Please select an invoice', 'warning'); return; }
+      showToast(`Return processed for ${inv} — stock increased (demo)`, 'success');
+    });
+  }
+
+  // ---------- CUSTOMERS ----------
+  function renderCustomers() {
+    pageContent.innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="relative"><i class="fas fa-search absolute left-3 top-2.5 text-blue-400 text-sm"></i><input type="text" placeholder="Search customers..." class="pl-9 pr-4 py-2 text-sm bg-white border border-blue-100 rounded-xl w-56 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+        <button id="addCustomerBtn" class="btn-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm shadow-blue-200"><i class="fas fa-plus"></i> Add Customer</button>
+      </div>
+      <div class="card p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-blue-50/70 text-blue-800 text-xs uppercase tracking-wider">
+              <tr>
+                <th class="px-5 py-3 text-left">Customer</th>
+                <th class="px-5 py-3 text-left">Phone</th>
+                <th class="px-5 py-3 text-right">Total Purchase</th>
+                <th class="px-5 py-3 text-right">Paid</th>
+                <th class="px-5 py-3 text-right">Due</th>
+                <th class="px-5 py-3 text-left">Last Purchase</th>
+                <th class="px-5 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${customers.map(c => `<tr class="border-b border-blue-50 table-row-hover">
+                <td class="px-5 py-3 font-medium">${c.name}</td>
+                <td class="px-5 py-3">${c.phone}</td>
+                <td class="px-5 py-3 text-right">Rs ${c.totalPurchase.toLocaleString()}</td>
+                <td class="px-5 py-3 text-right text-emerald-600">Rs ${c.paid.toLocaleString()}</td>
+                <td class="px-5 py-3 text-right ${c.due>0?'text-rose-600 font-medium':''}">Rs ${c.due.toLocaleString()}</td>
+                <td class="px-5 py-3 text-blue-500">${c.lastPurchase}</td>
+                <td class="px-5 py-3 text-right">
+                  <i class="fas fa-eye text-blue-400 hover:text-blue-600 cursor-pointer mr-2"></i>
+                  <i class="fas fa-edit text-blue-400 hover:text-blue-600 cursor-pointer mr-2"></i>
+                  <i class="fas fa-hand-holding-usd text-emerald-400 hover:text-emerald-600 cursor-pointer"></i>
+                </td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+    document.getElementById('addCustomerBtn')?.addEventListener('click', () => {
+      showModal('Add Customer (Demo)', `
+        <div class="space-y-3 text-sm">
+          <input placeholder="Full Name" class="border border-blue-100 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-200 outline-none" id="newCustName">
+          <input placeholder="Phone" class="border border-blue-100 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-200 outline-none" id="newCustPhone">
+          <input placeholder="Email" class="border border-blue-100 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-200 outline-none" id="newCustEmail">
+          <input placeholder="Address" class="border border-blue-100 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-200 outline-none" id="newCustAddress">
+        </div>
+      `, () => {
+        const name = document.getElementById('newCustName')?.value || 'New Customer';
+        const phone = document.getElementById('newCustPhone')?.value || '9800000000';
+        const email = document.getElementById('newCustEmail')?.value || '';
+        const address = document.getElementById('newCustAddress')?.value || '';
+        customers.push({ id: customers.length + 1, name, phone, email, address, totalPurchase: 0, paid: 0, due: 0, lastPurchase: '-', status: 'Active' });
+        renderCustomers();
+        showToast('Customer added (demo)');
+      });
+    });
+  }
+
+  // ---------- CUSTOMER DUE ----------
+  function renderCustomerDue() {
+    const creditCustomers = customers.filter(c => c.due > 0);
+    const totalDue = creditCustomers.reduce((a,b) => a + b.due, 0);
+
+    pageContent.innerHTML = `
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="card p-5 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+            <div class="flex items-center gap-3">
+              <i class="fas fa-hand-holding-usd text-blue-500 text-xl"></i>
+              <div><p class="text-xs text-blue-500 font-medium">Total Outstanding</p><p class="text-2xl font-semibold text-blue-700">Rs ${totalDue.toLocaleString()}</p></div>
+            </div>
+          </div>
+          <div class="card p-5">
+            <p class="text-xs text-blue-500 font-medium">Credit Customers</p>
+            <p class="text-2xl font-semibold">${creditCustomers.length}</p>
+          </div>
+          <div class="card p-5">
+            <p class="text-xs text-blue-500 font-medium">Avg. Due</p>
+            <p class="text-2xl font-semibold">Rs ${creditCustomers.length ? Math.round(totalDue/creditCustomers.length).toLocaleString() : 0}</p>
+          </div>
+        </div>
+        <div class="card p-0 overflow-hidden">
+          <div class="px-5 py-4 border-b border-blue-50"><p class="font-medium text-slate-700">Customers with Outstanding Due</p></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-blue-50/70 text-blue-800 text-xs uppercase tracking-wider">
+                <tr><th class="px-5 py-3 text-left">Customer</th><th class="px-5 py-3 text-left">Phone</th><th class="px-5 py-3 text-right">Total Due</th><th class="px-5 py-3 text-left">Last Purchase</th><th class="px-5 py-3 text-right">Action</th></tr>
+              </thead>
+              <tbody>
+                ${creditCustomers.map(c => `
+                  <tr class="border-b border-blue-50 table-row-hover">
+                    <td class="px-5 py-3 font-medium">${c.name}</td>
+                    <td class="px-5 py-3">${c.phone}</td>
+                    <td class="px-5 py-3 text-right text-rose-600 font-semibold">Rs ${c.due.toLocaleString()}</td>
+                    <td class="px-5 py-3 text-blue-500">${c.lastPurchase}</td>
+                    <td class="px-5 py-3 text-right"><button class="receive-payment text-xs btn-primary text-white px-3 py-1.5 rounded-lg" data-id="${c.id}">Receive Payment</button></td>
+                  </tr>
+                `).join('')}
+                ${creditCustomers.length === 0 ? '<tr><td colspan="5" class="p-5 text-center text-slate-400">No outstanding dues 🎉</td></tr>' : ''}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+    document.querySelectorAll('.receive-payment').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(e.target.dataset.id);
+        const cust = customers.find(c => c.id === id);
+        showModal('Receive Payment (Demo)', `
+          <div class="space-y-3 text-sm">
+            <p>Customer: <span class="font-medium">${cust.name}</span></p>
+            <p>Due Amount: <span class="font-medium text-rose-600">Rs ${cust.due.toLocaleString()}</span></p>
+            <input id="receiveAmount" type="number" value="${cust.due}" class="border border-blue-100 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-200 outline-none">
+          </div>
+        `, () => {
+          const amount = parseFloat(document.getElementById('receiveAmount')?.value) || cust.due;
+          cust.paid += amount;
+          cust.due = Math.max(0, cust.due - amount);
+          if (cust.due === 0) cust.status = 'Paid';
+          renderCustomerDue();
+          showToast(`Payment of Rs ${amount.toLocaleString()} received (demo)`);
+        });
+      });
+    });
+  }
+
+  // ---------- SUPPLIERS ----------
+  function renderSuppliers() {
+    pageContent.innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="relative"><i class="fas fa-search absolute left-3 top-2.5 text-blue-400 text-sm"></i><input type="text" placeholder="Search suppliers..." class="pl-9 pr-4 py-2 text-sm bg-white border border-blue-100 rounded-xl w-56 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+        <button id="addSupplierBtn" class="btn-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm shadow-blue-200"><i class="fas fa-plus"></i> Add Supplier</button>
+      </div>
+      <div class="card p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-blue-50/70 text-blue-800 text-xs uppercase tracking-wider">
+              <tr>
+                <th class="px-5 py-3 text-left">Supplier</th>
+                <th class="px-5 py-3 text-left">Company</th>
+                <th class="px-5 py-3 text-left">Phone</th>
+                <th class="px-5 py-3 text-right">Total Purchase</th>
+                <th class="px-5 py-3 text-right">Paid</th>
+                <th class="px-5 py-3 text-right">Due</th>
+                <th class="px-5 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${suppliers.map(s => `<tr class="border-b border-blue-50 table-row-hover">
+                <td class="px-5 py-3 font-medium">${s.name}</td>
+                <td class="px-5 py-3 text-slate-500">${s.company}</td>
+                <td class="px-5 py-3">${s.phone}</td>
+                <td class="px-5 py-3 text-right">Rs ${s.totalPurchase.toLocaleString()}</td>
+                <td class="px-5 py-3 text-right text-emerald-600">Rs ${s.paid.toLocaleString()}</td>
+                <td class="px-5 py-3 text-right ${s.due>0?'text-rose-600 font-medium':''}">Rs ${s.due.toLocaleString()}</td>
+                <td class="px-5 py-3 text-right">
+                  <i class="fas fa-eye text-blue-400 hover:text-blue-600 cursor-pointer mr-2"></i>
+                  <i class="fas fa-edit text-blue-400 hover:text-blue-600 cursor-pointer"></i>
+                </td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+    document.getElementById('addSupplierBtn')?.addEventListener('click', () => {
+      showModal('Add Supplier (Demo)', `
+        <div class="space-y-3 text-sm">
+          <input placeholder="Supplier Name" class="border border-blue-100 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-200 outline-none" id="newSupName">
+          <input placeholder="Company" class="border border-blue-100 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-200 outline-none" id="newSupCompany">
+          <input placeholder="Phone" class="border border-blue-100 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-200 outline-none" id="newSupPhone">
+          <input placeholder="Email" class="border border-blue-100 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-200 outline-none" id="newSupEmail">
+        </div>
+      `, () => {
+        const name = document.getElementById('newSupName')?.value || 'New Supplier';
+        const company = document.getElementById('newSupCompany')?.value || 'Company';
+        const phone = document.getElementById('newSupPhone')?.value || '01-0000000';
+        const email = document.getElementById('newSupEmail')?.value || '';
+        suppliers.push({ id: suppliers.length + 1, name, company, phone, email, totalPurchase: 0, paid: 0, due: 0 });
+        renderSuppliers();
+        showToast('Supplier added (demo)');
+      });
+    });
+  }
+
+  // ---------- PURCHASES ----------
+  function renderPurchases() {
+    pageContent.innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="relative"><i class="fas fa-search absolute left-3 top-2.5 text-blue-400 text-sm"></i><input type="text" placeholder="Search purchases..." class="pl-9 pr-4 py-2 text-sm bg-white border border-blue-100 rounded-xl w-56 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+        <button id="addPurchaseBtn" class="btn-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm shadow-blue-200"><i class="fas fa-plus"></i> New Purchase</button>
+      </div>
+      <div class="card p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-blue-50/70 text-blue-800 text-xs uppercase tracking-wider">
+              <tr>
+                <th class="px-5 py-3 text-left">Supplier</th>
+                <th class="px-5 py-3 text-left">Invoice</th>
+                <th class="px-5 py-3 text-left">Products</th>
+                <th class="px-5 py-3 text-right">Qty</th>
+                <th class="px-5 py-3 text-right">Amount</th>
+                <th class="px-5 py-3 text-left">Date</th>
+                <th class="px-5 py-3 text-left">Status</th>
+                <th class="px-5 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${purchaseData.map(p => `
+                <tr class="border-b border-blue-50 table-row-hover">
+                  <td class="px-5 py-3 font-medium">${p.supplier}</td>
+                  <td class="px-5 py-3 text-blue-700">${p.invoice}</td>
+                  <td class="px-5 py-3 text-slate-600">${p.products}</td>
+                  <td class="px-5 py-3 text-right">${p.qty}</td>
+                  <td class="px-5 py-3 text-right font-medium">Rs ${p.amount.toLocaleString()}</td>
+                  <td class="px-5 py-3 text-slate-500">${p.date}</td>
+                  <td class="px-5 py-3"><span class="badge ${p.status==='Received'?'badge-success':'badge-warning'}">${p.status}</span></td>
+                  <td class="px-5 py-3 text-right"><i class="fas fa-eye text-blue-400 hover:text-blue-600 cursor-pointer"></i></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+    document.getElementById('addPurchaseBtn')?.addEventListener('click', () => {
+      showModal('New Purchase (Demo)', `
+        <div class="space-y-3 text-sm">
+          <select class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="purSupplier">
+            ${suppliers.map(s => `<option>${s.name}</option>`).join('')}
+          </select>
+          <input placeholder="Invoice Number" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="purInvoice">
+          <input type="date" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="purDate">
+          <select class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="purProduct">
+            ${products.map(p => `<option>${p.name}</option>`).join('')}
+          </select>
+          <input type="number" placeholder="Quantity" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="purQty" value="10">
+          <input type="number" placeholder="Purchase Price" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none" id="purPrice">
+        </div>
+      `, () => {
+        const supplier = document.getElementById('purSupplier')?.value || suppliers[0].name;
+        const invoice = document.getElementById('purInvoice')?.value || `PO-${100 + purchaseData.length + 1}`;
+        const date = document.getElementById('purDate')?.value || new Date().toISOString().split('T')[0];
+        const productName = document.getElementById('purProduct')?.value || products[0].name;
+        const qty = parseInt(document.getElementById('purQty')?.value) || 10;
+        const price = parseFloat(document.getElementById('purPrice')?.value) || 0;
+        // increase stock
+        const prod = products.find(p => p.name === productName);
+        if (prod) prod.stock += qty;
+        purchaseData.push({ id: purchaseData.length + 1, supplier, invoice, products: `${productName} (${qty})`, qty, amount: price * qty, date, status: 'Received' });
+        renderPurchases();
+        showToast('Purchase recorded — stock increased (demo)');
+      });
+    });
+  }
+
+  // ---------- EXPENSES (ENHANCED) ----------
+  function renderExpenses() {
+    const totalExpenses = expensesData.reduce((a,b) => a + b.amount, 0);
+    pageContent.innerHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div class="card p-4"><p class="text-xs text-blue-500 font-medium">Total Expenses</p><p class="text-2xl font-semibold">Rs ${totalExpenses.toLocaleString()}</p></div>
+        <div class="card p-4"><p class="text-xs text-blue-500 font-medium">This Month</p><p class="text-2xl font-semibold">Rs ${totalExpenses.toLocaleString()}</p></div>
+        <div class="card p-4"><p class="text-xs text-blue-500 font-medium">Top Category</p><p class="text-2xl font-semibold">Salary</p></div>
+        <div class="card p-4"><p class="text-xs text-blue-500 font-medium">Entries</p><p class="text-2xl font-semibold">${expensesData.length}</p></div>
+      </div>
+      <div class="card p-0 overflow-hidden">
+        <div class="px-5 py-4 border-b border-blue-50 flex justify-between items-center">
+          <p class="font-medium text-slate-700">Expense Records</p>
+          <button id="addExpenseBtn" class="btn-primary text-white text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm shadow-blue-200 transition">
+            <i class="fas fa-plus"></i> Add Expense
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-blue-50/70 text-blue-800 text-xs uppercase tracking-wider">
+              <tr>
+                <th class="px-5 py-3 text-left">Expense</th>
+                <th class="px-5 py-3 text-left">Category</th>
+                <th class="px-5 py-3 text-right">Amount</th>
+                <th class="px-5 py-3 text-left">Date</th>
+                <th class="px-5 py-3 text-left">Payment Method</th>
+                <th class="px-5 py-3 text-left">Note</th>
+              </tr>
+            </thead>
+            <tbody id="expensesTableBody">
+              ${expensesData.map(e => `
+                <tr class="border-b border-blue-50 table-row-hover">
+                  <td class="px-5 py-3 font-medium">${e.expense}</td>
+                  <td class="px-5 py-3"><span class="badge badge-info">${e.cat}</span></td>
+                  <td class="px-5 py-3 text-right">Rs ${e.amount.toLocaleString()}</td>
+                  <td class="px-5 py-3 text-slate-500">${e.date}</td>
+                  <td class="px-5 py-3">${e.method}</td>
+                  <td class="px-5 py-3 text-slate-400 text-xs">${e.note || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('addExpenseBtn')?.addEventListener('click', () => {
+      showModal('Add Expense (Demo)', `
+        <div class="space-y-3 text-sm">
+          <input id="expName" placeholder="Expense Name (e.g. Electricity Bill)" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none">
+          <select id="expCat" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none">
+            ${expenseCategories.map(c => `<option>${c}</option>`).join('')}
+          </select>
+          <input id="expAmount" type="number" placeholder="Amount (Rs)" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none">
+          <input id="expDate" type="date" value="${new Date().toISOString().split('T')[0]}" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none">
+          <select id="expMethod" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none">
+            <option>Cash</option><option>Bank</option><option>Card</option><option>eSewa</option><option>Khalti</option>
+          </select>
+          <input id="expNote" placeholder="Note (optional)" class="w-full border border-blue-100 rounded-lg p-2 focus:ring-2 focus:ring-blue-200 outline-none">
+        </div>
+      `, () => {
+        const name = document.getElementById('expName')?.value || 'New Expense';
+        const cat = document.getElementById('expCat')?.value || 'Other';
+        const amount = parseFloat(document.getElementById('expAmount')?.value) || 0;
+        const date = document.getElementById('expDate')?.value || new Date().toISOString().split('T')[0];
+        const method = document.getElementById('expMethod')?.value || 'Cash';
+        const note = document.getElementById('expNote')?.value || '';
+        if (amount <= 0) { showToast('Please enter a valid amount', 'warning'); return; }
+        const newId = expensesData.length + 1;
+        expensesData.push({ id: newId, expense: name, cat, amount, date, method, note });
+        renderExpenses();
+        showToast(`Expense "${name}" added (demo)`, 'success');
+      });
+    });
+  }
+
+  // ---------- REPORTS ----------
+  function renderReports() {
+    pageContent.innerHTML = `
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div class="card p-4"><p class="text-xs text-blue-500 font-medium">Total Sales</p><p class="text-xl font-semibold">Rs 12,45,000</p><p class="text-xs text-emerald-600 mt-1">+12.5%</p></div>
+        <div class="card p-4"><p class="text-xs text-blue-500 font-medium">Total Purchase</p><p class="text-xl font-semibold">Rs 8,90,000</p><p class="text-xs text-rose-600 mt-1">-3.2%</p></div>
+        <div class="card p-4"><p class="text-xs text-blue-500 font-medium">Gross Profit</p><p class="text-xl font-semibold text-emerald-600">Rs 3,55,000</p><p class="text-xs text-emerald-600 mt-1">+8.1%</p></div>
+        <div class="card p-4"><p class="text-xs text-blue-500 font-medium">Expenses</p><p class="text-xl font-semibold text-rose-600">Rs 1,45,000</p><p class="text-xs text-rose-600 mt-1">+2.4%</p></div>
+        <div class="card p-4"><p class="text-xs text-blue-500 font-medium">Net Profit</p><p class="text-xl font-semibold text-emerald-700">Rs 2,10,000</p><p class="text-xs text-emerald-600 mt-1">+5.6%</p></div>
+      </div>
+      <div class="flex gap-2 mb-4 flex-wrap">
+        <button class="report-tab text-sm btn-primary text-white px-4 py-1.5 rounded-lg shadow-sm shadow-blue-200">Sales Report</button>
+        <button class="report-tab text-sm bg-white border border-blue-100 px-4 py-1.5 rounded-lg">Purchase Report</button>
+        <button class="report-tab text-sm bg-white border border-blue-100 px-4 py-1.5 rounded-lg">Inventory Report</button>
+        <button class="report-tab text-sm bg-white border border-blue-100 px-4 py-1.5 rounded-lg">Profit & Loss</button>
+        <button class="report-tab text-sm bg-white border border-blue-100 px-4 py-1.5 rounded-lg">Customer Due</button>
+        <button class="report-tab text-sm bg-white border border-blue-100 px-4 py-1.5 rounded-lg">Supplier Due</button>
+      </div>
+      <div class="flex gap-2 mb-4 flex-wrap">
+        <button class="text-xs bg-white border border-blue-100 px-3 py-1 rounded-lg">Today</button>
+        <button class="text-xs bg-white border border-blue-100 px-3 py-1 rounded-lg">This Week</button>
+        <button class="text-xs btn-primary text-white px-3 py-1 rounded-lg shadow-sm shadow-blue-200">This Month</button>
+        <button class="text-xs bg-white border border-blue-100 px-3 py-1 rounded-lg">Custom</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="card p-5"><p class="font-medium text-slate-700 mb-3">Sales vs Purchase</p><canvas id="reportChart1" height="140"></canvas></div>
+        <div class="card p-5"><p class="font-medium text-slate-700 mb-3">Profit Trend</p><canvas id="reportChart2" height="140"></canvas></div>
+      </div>
+      <div class="card p-5 mt-5">
+        <p class="font-medium text-slate-700 mb-3">Category Performance</p>
+        <canvas id="reportChart3" height="100"></canvas>
+      </div>
+    `;
+    setTimeout(() => {
+      const ctx1 = document.getElementById('reportChart1')?.getContext('2d');
+      if (ctx1) new Chart(ctx1, { type: 'bar', data: { labels: ['Jan','Feb','Mar','Apr','May','Jun'], datasets: [{ label: 'Sales', data: [8.2, 9.5, 12.4, 11.0, 13.2, 14.1], backgroundColor: '#2563eb' }, { label: 'Purchase', data: [5.1, 6.8, 8.9, 7.5, 9.0, 9.8], backgroundColor: '#93c5fd' }] } });
+      const ctx2 = document.getElementById('reportChart2')?.getContext('2d');
+      if (ctx2) new Chart(ctx2, { type: 'line', data: { labels: ['Jan','Feb','Mar','Apr','May','Jun'], datasets: [{ label: 'Net Profit', data: [1.2, 1.8, 2.1, 2.0, 2.5, 2.8], borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.06)', tension: 0.3, fill: true }] }, options: { plugins: { legend: { display: false } } } });
+      const ctx3 = document.getElementById('reportChart3')?.getContext('2d');
+      if (ctx3) new Chart(ctx3, { type: 'bar', data: { labels: ['Phones', 'Accessories', 'Wearables', 'Tablets'], datasets: [{ label: 'Revenue (Lakhs)', data: [8.5, 1.8, 1.2, 0.9], backgroundColor: '#2563eb', borderRadius: 6 }] } });
+    }, 50);
+  }
+
+  // ---------- SETTINGS ----------
+  function renderSettings() {
+    pageContent.innerHTML = `
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="card p-6">
+          <h3 class="font-medium text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-store text-blue-500"></i> Store Information</h3>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div><label class="text-blue-500 text-xs font-medium">Store Name</label><input value="MobileHub Nepal" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+            <div><label class="text-blue-500 text-xs font-medium">Phone</label><input value="01-1234567" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+            <div><label class="text-blue-500 text-xs font-medium">Address</label><input value="Kathmandu, Nepal" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+            <div><label class="text-blue-500 text-xs font-medium">Email</label><input value="info@mobilehub.com" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+            <div><label class="text-blue-500 text-xs font-medium">PAN/VAT</label><input value="123456789" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+            <div><label class="text-blue-500 text-xs font-medium">Currency</label><input value="NPR (Rs)" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+          </div>
+        </div>
+        <div class="card p-6">
+          <h3 class="font-medium text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-file-invoice text-blue-500"></i> Invoice Settings</h3>
+          <div class="space-y-4 text-sm">
+            <div><label class="text-blue-500 text-xs font-medium">Invoice Prefix</label><input value="INV-" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+            <div><label class="text-blue-500 text-xs font-medium">Tax Rate (%)</label><input value="13" type="number" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none"></div>
+            <div><label class="text-blue-500 text-xs font-medium">Terms & Conditions</label><textarea rows="3" class="w-full border border-blue-100 rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-200 outline-none">Goods once sold will not be taken back. Warranty as per manufacturer.</textarea></div>
+          </div>
+        </div>
+        <div class="card p-6 lg:col-span-2">
+          <h3 class="font-medium text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-palette text-blue-500"></i> Theme & Preferences</h3>
+          <div class="flex flex-wrap gap-3">
+            <button class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm">Blue Theme (Active)</button>
+            <button class="px-4 py-2 bg-white border border-blue-100 rounded-lg text-sm">Dark Mode</button>
+            <button class="px-4 py-2 bg-white border border-blue-100 rounded-lg text-sm">Compact View</button>
+          </div>
+        </div>
+      </div>
+      <div class="mt-5">
+        <button class="btn-primary text-white px-6 py-2.5 rounded-xl text-sm shadow-sm shadow-blue-200">Save All Settings</button>
+      </div>
+    `;
+  }
+
+  // ============================================================
+  // UTILITIES
+  // ============================================================
+  function showToast(msg, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle text-emerald-300' : 'fa-exclamation-circle text-amber-300'}"></i> ${msg}`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+  }
+
+  function showModal(title, contentHtml, onConfirm) {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4';
+    overlay.innerHTML = `<div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-blue-100 max-h-[90vh] overflow-y-auto"><h3 class="font-semibold text-lg mb-4 text-blue-800">${title}</h3><div class="space-y-3">${contentHtml}</div><div class="flex justify-end gap-2 mt-6"><button class="cancel-btn px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition">Cancel</button><button class="confirm-btn btn-primary text-white px-5 py-2 rounded-lg text-sm shadow-sm shadow-blue-200">Confirm</button></div></div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('.cancel-btn').addEventListener('click', () => overlay.remove());
+    overlay.querySelector('.confirm-btn').addEventListener('click', () => { if (onConfirm) onConfirm(); overlay.remove(); });
+  }
+
+  // ============================================================
+  // SIDEBAR TOGGLE
+  // ============================================================
+  function openSidebar() { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); }
+  function closeSidebar() { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); }
+  document.getElementById('menuToggle')?.addEventListener('click', openSidebar);
+  overlay?.addEventListener('click', closeSidebar);
+
+  // Notification bell
+  document.getElementById('notificationBell')?.addEventListener('click', () => {
+    showToast('5 new notifications: Low stock, Due payments, New sale', 'info');
+  });
+
+  // ============================================================
+  // INITIAL RENDER + NAV
+  // ============================================================
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => { renderPage(item.dataset.page); });
+  });
+  renderPage('dashboard');
+</script>
+
+</body>
+</html>
