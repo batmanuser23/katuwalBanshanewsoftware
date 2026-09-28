@@ -1,55 +1,134 @@
 /* src/index.css */
 @import "tailwindcss";
 
-/* @theme {
-  --color-primary: #16a34a;
-  --color-primary-dark: #15803d;
-  --color-primary-light: #22c55e;
-  --color-secondary: #ffffff;
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
+/* Add to src/index.css or create src/styles/print.css */
+
+/* ============ PRINT STYLES FOR FAMILY TREE ============ */
+
+@media print {
+  /* Page setup - A4 Portrait */
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  /* Hide everything except tree */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-tree-container,
+  .print-tree-container * {
+    visibility: visible !important;
+  }
+
+  /* Hide UI controls during print */
+  .no-print,
+  .print-hide,
+  header, nav, .sidebar, .toolbar,
+  .modal-header, .modal-footer,
+  button:not(.print-keep),
+  .export-buttons,
+  .controls-bar,
+  .family-info-bar,
+  .search-bar,
+  .tree-controls,
+  .zoom-controls {
+    display: none !important;
+  }
+
+  /* Tree container positioning */
+  .print-tree-container {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Tree content scaling for A4 fit */
+  .tree-content {
+    transform: scale(0.7) !important;
+    transform-origin: top left !important;
+    width: 143% !important;
+    font-size: 10px !important;
+  }
+
+  /* Compact node cards */
+  .tree-content .bg-white {
+    background: white !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+    border-width: 1px !important;
+    width: 40mm !important;
+    max-width: 40mm !important;
+  }
+
+  /* Compact photos */
+  .tree-content img {
+    max-height: 20mm !important;
+    object-fit: cover !important;
+  }
+
+  /* Compact text */
+  .tree-content p {
+    font-size: 8px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Ensure colors print */
+  .tree-content .bg-green-400,
+  .tree-content .bg-pink-400,
+  .tree-content .bg-amber-300,
+  .tree-content .bg-green-50,
+  .tree-content .bg-pink-50,
+  .tree-content .bg-amber-50 {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Connector lines */
+  .tree-content .bg-green-400,
+  .tree-content .bg-pink-400 {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Page break for large trees */
+  .tree-page-break {
+    page-break-after: always;
+  }
+
+  /* Prevent orphan nodes */
+  .tree-node {
+    page-break-inside: avoid;
+  }
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Screen styles for tree controls */
+.tree-controls {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  padding: 8px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #f3f4f6;
+/* Zoom container */
+.zoom-container {
+  overflow: auto;
+  max-height: 70vh;
+  cursor: grab;
 }
 
-/* Smooth scroll */
-html {
-  scroll-behavior: smooth;
+.zoom-container:active {
+  cursor: grabbing;
 }
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #16a34a;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #15803d;
-} */

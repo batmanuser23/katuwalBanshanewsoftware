@@ -1,5 +1,3 @@
-// models/FamilyRelationship.js - COMPLETE FIXED VERSION
-
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -57,21 +55,6 @@ const familyRelationshipSchema = new mongoose.Schema({
 familyRelationshipSchema.index(
   { member: 1, relatedMember: 1, relationshipType: 1 },
   { unique: true }
-);
-
-// ✅ ADD THIS: Prevent duplicate spouse relationships
-familyRelationshipSchema.index(
-  { 
-    member: 1, 
-    relatedMember: 1, 
-    relationshipType: 1 
-  },
-  { 
-    unique: true,
-    partialFilterExpression: { 
-      relationshipType: { $in: ['spouse', 'husband', 'wife'] } 
-    }
-  }
 );
 
 // Indexes for performance

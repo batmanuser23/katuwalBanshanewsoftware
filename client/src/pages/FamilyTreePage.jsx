@@ -1973,95 +1973,105 @@ const FamilyTreePage = () => {
         )}
       </Modal>
 
-      {/* ============ PRINT STYLES ============ */}
-      <style jsx global>{`
-        /* Hide all UI elements during print */
-        @media print {
-          /* Hide ALL UI elements */
-          .no-print,
-          header, nav, .sidebar, .toolbar, 
-          button:not(.print-only-button),
-          .modal-controls, .export-buttons,
-          .family-info-bar, .controls-bar,
-          .search-bar, .family-grid,
-          .modal-header, .modal-footer,
-          [class*="Header"], [class*="Toolbar"],
-          [class*="Sidebar"], [class*="Navigation"] {
-            display: none !important;
-          }
-          
-          /* Only show tree container */
-          .print-tree-container {
-            display: block !important;
-            position: relative !important;
-            width: 100% !important;
-            height: auto !important;
-            max-height: none !important;
-            overflow: visible !important;
-            background: white !important;
-            padding: 20px !important;
-            border: none !important;
-            box-shadow: none !important;
-          }
-          
-          /* Ensure tree content is visible */
-          .print-tree-container * {
-            visibility: visible !important;
-          }
-          
-          /* Tree content scaling */
-          .tree-content {
-            transform: scale(0.85) !important;
-            transform-origin: top left !important;
-            width: 117% !important;
-          }
-          
-          /* Card styles for print */
-          .tree-content .bg-white {
-            background: white !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
-          }
-          
-          /* Page breaks */
-          .tree-page-break {
-            page-break-after: always;
-          }
-          
-          /* Ensure connectors print */
-          .tree-content .bg-green-400,
-          .tree-content .bg-pink-400,
-          .tree-content .bg-amber-300 {
-            print-color-adjust: exact !important;
-            -webkit-print-color-adjust: exact !important;
-          }
-          
-          /* Ensure card colors print */
-          .tree-content .bg-green-50,
-          .tree-content .bg-pink-50,
-          .tree-content .bg-amber-50 {
-            print-color-adjust: exact !important;
-            -webkit-print-color-adjust: exact !important;
-          }
-        }
+    {/* ============ PRINT STYLES ============ */}
+<style jsx global>{`
+  /* Hide all UI elements during print */
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 10mm;
+    }
 
-        /* Print-only content styling */
-        .print-only-content {
-          font-size: 12px;
-          line-height: 1.4;
-        }
-        .print-only-content .bg-white {
-          background: white !important;
-        }
-        .print-only-content .border {
-          border-color: #e5e7eb !important;
-        }
+    /* Hide ALL UI elements */
+    .no-print,
+    header, nav, .sidebar, .toolbar, 
+    button:not(.print-only-button),
+    .modal-controls, .export-buttons,
+    .family-info-bar, .controls-bar,
+    .search-bar, .family-grid,
+    .modal-header, .modal-footer,
+    [class*="Header"], [class*="Toolbar"],
+    [class*="Sidebar"], [class*="Navigation"] {
+      display: none !important;
+    }
+    
+    /* Only show tree container */
+    .print-tree-container {
+      display: block !important;
+      position: relative !important;
+      width: 100% !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+      background: white !important;
+      padding: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    
+    /* Ensure tree content is visible */
+    .print-tree-container * {
+      visibility: visible !important;
+    }
+    
+    /* ✅ Tree content scaling for A4 portrait */
+    .tree-content {
+      transform: scale(0.55) !important;
+      transform-origin: top left !important;
+      width: 180% !important;
+    }
+    
+    /* Card styles for print */
+    .tree-content .bg-white {
+      background: white !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* ✅ Prevent cards from breaking across pages */
+    .tree-content > div > div {
+      page-break-inside: avoid;
+    }
+    
+    /* Page breaks */
+    .tree-page-break {
+      page-break-after: always;
+    }
+    
+    /* Ensure connectors print */
+    .tree-content .bg-green-400,
+    .tree-content .bg-pink-400,
+    .tree-content .bg-amber-300 {
+      print-color-adjust: exact !important;
+      -webkit-print-color-adjust: exact !important;
+    }
+    
+    /* Ensure card colors print */
+    .tree-content .bg-green-50,
+    .tree-content .bg-pink-50,
+    .tree-content .bg-amber-50 {
+      print-color-adjust: exact !important;
+      -webkit-print-color-adjust: exact !important;
+    }
+  }
 
-        /* Print-specific card styling */
-        .print-only-content .tree-content {
-          transform: none !important;
-          width: 100% !important;
-        }
-      `}</style>
+  /* Print-only content styling */
+  .print-only-content {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .print-only-content .bg-white {
+    background: white !important;
+  }
+  .print-only-content .border {
+    border-color: #e5e7eb !important;
+  }
+
+  /* Print-specific card styling */
+  .print-only-content .tree-content {
+    transform: none !important;
+    width: 100% !important;
+  }
+`}</style>
     </div>
   );
 };

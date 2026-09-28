@@ -331,6 +331,8 @@
 
 // export default ImageUpload;
 
+//src/components/ImageUpload.jsx - Updated with back camera support and error handling
+
 import { useRef, useState, useEffect } from 'react';
 import { CloudArrowUpIcon, CameraIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import Webcam from "react-webcam";
