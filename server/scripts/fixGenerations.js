@@ -1,77 +1,73 @@
-// scripts/fixGenerations.js - RUN THIS ONCE
+// backend/scripts/fixSpouseLinks.js
+// Run once: node scripts/fixSpouseLinks.js
 
 import mongoose from 'mongoose';
-import Member from '../models/Member.js';
 import dotenv from 'dotenv';
+import Member from '../models/Member.js';
 
 dotenv.config();
 
-const fixGenerations = async () => {
+const fixSpouseLinks = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('🔗 Connected to MongoDB');
+    console.log('✅ Connected to MongoDB\n');
 
-    const members = await Member.find().populate('father mother spouse');
-    console.log(`📊 Total members: ${members.length}`);
+    const unlinkedSpouses = await Member.find({
+      relationship: { $in: ['श्रीमती', 'श्रीमान'] },
+      $or: [
+        { spouse: { $exists: false } },
+        { spouse: null },
+      ],
+    });
 
-    let updated = 0;
+    console.log(`🔍 Found ${unlinkedSpouses.length} unlinked spouse(s)\n`);
 
-    for (const member of members) {
-      let correctGeneration = member.generation || 1;
+    for (const spouse of unlinkedSpouses) {
+      console.log(`\n--- ${spouse.name} (${spouse.memberNumber}) ---`);
+      console.log(`  Relationship: ${spouse.relationship}`);
+      console.log(`  Vansha: ${spouse.vanshaGenerationNumber}`);
+      console.log(`  Family: ${spouse.family}`);
 
-      // If father exists, generation = father.generation + 1
-      if (member.father && member.father.generation) {
-        correctGeneration = member.father.generation + 1;
-      }
-      // If mother exists, generation = mother.generation + 1
-      else if (member.mother && member.mother.generation) {
-        correctGeneration = member.mother.generation + 1;
-      }
-      // If spouse exists, same generation
-      else if (member.spouse && member.spouse.generation) {
-        correctGeneration = member.spouse.generation;
-      }
-      // Based on relationship
-      else if (member.relationship) {
-        const relationshipMap = {
-          'हजुरबा': 0,
-          'हजुरआमा': 0,
-          'बुबा': 1,
-          'आमा': 1,
-          'छोरा': 2,
-          'छोरी': 2,
-          'नाति': 3,
-          'नातिनी': 3,
-          'पनाति': 4,
-          'पनातिनी': 4,
-        };
-        if (relationshipMap[member.relationship] !== undefined) {
-          correctGeneration = relationshipMap[member.relationship];
-        }
+      const candidates = await Member.find({
+        _id: { $ne: spouse._id },
+        family: spouse.family,
+        vanshaGenerationNumber: spouse.vanshaGenerationNumber,
+        gender: { $ne: spouse.gender },
+        $or: [
+          { spouse: { $exists: false } },
+          { spouse: null },
+        ],
+      });
+
+      if (candidates.length === 0) {
+        console.log('  ⚠️ No candidate found.');
+        continue;
       }
 
-      if (member.generation !== correctGeneration) {
-        console.log(`📝 ${member.name} (${member.memberNumber}): ${member.generation} → ${correctGeneration}`);
-        member.generation = correctGeneration;
-        await member.save();
-        updated++;
-      }
-    }
+      if (candidates.length === 1) {
+        const partner = candidates[0];
+        console.log(`  ✅ Auto-linking with: ${partner.name} (${partner.memberNumber})`);
 
-    console.log(`✅ Updated ${updated} members`);
+        await Member.findByIdAndUpdate(spouse._id, {
+          spouse: partner._id,
+          ...(spouse.gender === 'female' ? { husband: partner._id } : { wife: partner._id }),
+        });
 
-    // Second pass: Update spouses to match
-    const spouses = await Member.find({ spouse: { $exists: true, $ne: null } });
-    for (const member of spouses) {
-      const spouse = await Member.findById(member.spouse);
-      if (spouse && spouse.generation !== member.generation) {
-        console.log(`💑 Syncing spouse generation: ${member.name} ↔ ${spouse.name}`);
-        spouse.generation = member.generation;
-        await spouse.save();
+        await Member.findByIdAndUpdate(partner._id, {
+          spouse: spouse._id,
+          ...(spouse.gender === 'female' ? { wife: spouse._id } : { husband: spouse._id }),
+        });
+
+        console.log(`  ✅ Linked!`);
+      } else {
+        console.log(`  ⚠️ Multiple candidates — link manually:`);
+        candidates.forEach((c, i) => {
+          console.log(`    ${i + 1}. ${c.name} (${c.memberNumber}) - ${c.gender}`);
+        });
       }
     }
 
-    console.log('✅ Generation fix complete');
+    console.log('\n✅ Done!\n');
     process.exit(0);
   } catch (error) {
     console.error('❌ Error:', error);
@@ -79,4 +75,4 @@ const fixGenerations = async () => {
   }
 };
 
-fixGenerations();
+fixSpouseLinks();

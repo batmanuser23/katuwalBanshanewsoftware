@@ -1,4 +1,10 @@
-// controllers/familyController.js - COMPLETE FIXED VERSION
+// backend/src/controllers/familyController.js - COMPLETE UPDATED FILE
+// Features:
+// - totalGenerations calculated from actual tree
+// - Manual vanshaj number preservation
+// - Family head supports ObjectId OR manual text
+// - Duplicate family prevention
+// - Race condition safe family number generation
 
 import Family from '../models/Family.js';
 import House from '../models/House.js';
@@ -7,6 +13,9 @@ import { io } from '../server.js';
 import cloudinary from '../config/cloudinary.js';
 import Notification from '../models/Notification.js';
 
+// ============================================================
+// GET FAMILIES
+// ============================================================
 export const getFamilies = async (req, res) => {
   try {
     const { page = 1, limit = 10, search, house } = req.query;
@@ -38,15 +47,26 @@ export const getFamilies = async (req, res) => {
       Family.countDocuments(query),
     ]);
 
-    // Get member counts for each family
+    // ⭐ Get member counts and CALCULATE total generations from actual data
     const familiesWithCounts = await Promise.all(
       families.map(async (family) => {
         const memberCount = await Member.countDocuments({ family: family._id });
-        const generations = await Member.distinct('generation', { family: family._id });
+        
+        // ⭐ Calculate totalGenerations from actual member data
+        const members = await Member.find({ family: family._id })
+          .select('generation generationMode')
+          .lean();
+        
+        let totalGenerations = 0;
+        if (members.length > 0) {
+          // Use maximum effective generation
+          totalGenerations = Math.max(...members.map(m => m.generation || 1));
+        }
+        
         return {
           ...family.toObject(),
           memberCount,
-          generationCount: generations.length,
+          totalGenerations,
         };
       })
     );
@@ -66,12 +86,13 @@ export const getFamilies = async (req, res) => {
   }
 };
 
-// ⭐ UPDATED: LINEAGE TREE BUILDER - Removed rollNumber references
+// ============================================================
+// LINEAGE TREE BUILDER (with spouse deduplication)
+// ============================================================
 const buildLineageTree = (members, family) => {
   if (!members || members.length === 0) return [];
 
   const memberMap = {};
-  const rootCandidates = [];
 
   // Create map of all members
   members.forEach((m) => {
@@ -81,7 +102,7 @@ const buildLineageTree = (members, family) => {
       spouses: [],
       parents: [],
       level: 0,
-      isLineageSource: true, // Default true for all members
+      isLineageSource: true,
     };
   });
 
@@ -91,11 +112,12 @@ const buildLineageTree = (members, family) => {
     const member = memberMap[memberId];
     if (!member) return;
 
-    // Determine if this member is a spouse (not lineage source)
+    // Spouse relationship (bidirectional, DEDUPLICATED)
     if (m.spouse) {
       const spouseId =
         typeof m.spouse === 'object' ? m.spouse._id?.toString() : m.spouse?.toString();
       if (spouseId && memberMap[spouseId]) {
+        // ⭐ Only add if not already present (deduplication)
         if (!member.spouses.includes(spouseId)) {
           member.spouses.push(spouseId);
         }
@@ -135,10 +157,12 @@ const buildLineageTree = (members, family) => {
       }
     }
 
-    // Grandfather relationship
+    // Grandfather
     if (m.grandfather) {
       const grandId =
-        typeof m.grandfather === 'object' ? m.grandfather._id?.toString() : m.grandfather?.toString();
+        typeof m.grandfather === 'object'
+          ? m.grandfather._id?.toString()
+          : m.grandfather?.toString();
       if (grandId && memberMap[grandId]) {
         if (!member.parents.includes(grandId)) {
           member.parents.push(grandId);
@@ -147,10 +171,12 @@ const buildLineageTree = (members, family) => {
       }
     }
 
-    // Grandmother relationship
+    // Grandmother
     if (m.grandmother) {
       const grandId =
-        typeof m.grandmother === 'object' ? m.grandmother._id?.toString() : m.grandmother?.toString();
+        typeof m.grandmother === 'object'
+          ? m.grandmother._id?.toString()
+          : m.grandmother?.toString();
       if (grandId && memberMap[grandId]) {
         if (!member.parents.includes(grandId)) {
           member.parents.push(grandId);
@@ -160,7 +186,7 @@ const buildLineageTree = (members, family) => {
     }
   });
 
-  // Identify spouses (married into the family)
+  // ⭐ Identify spouses (married into family - NOT lineage source)
   Object.values(memberMap).forEach((member) => {
     const hasChildren = member.children && member.children.length > 0;
     const isParent = member.parents && member.parents.length > 0;
@@ -213,7 +239,9 @@ const buildLineageTree = (members, family) => {
   return roots.map((root) => enrichLineageNode(root, memberMap, 0, new Set()));
 };
 
-// ⭐ UPDATED: Helper to enrich node - Removed rollNumber references
+// ============================================================
+// HELPER: Enrich Lineage Node
+// ============================================================
 const enrichLineageNode = (node, memberMap, level = 0, visited = new Set()) => {
   const nodeId = node._id.toString();
 
@@ -251,7 +279,9 @@ const enrichLineageNode = (node, memberMap, level = 0, visited = new Set()) => {
   return enriched;
 };
 
-// ⭐ UPDATED: getFamilyTreeByFamily - Removed rollNumber from populate
+// ============================================================
+// GET FAMILY TREE BY FAMILY
+// ============================================================
 export const getFamilyTreeByFamily = async (req, res) => {
   try {
     const { familyId } = req.params;
@@ -272,41 +302,33 @@ export const getFamilyTreeByFamily = async (req, res) => {
       });
     }
 
-    // Get all members in this family
     const members = await Member.find({ family: familyId })
       .populate({
         path: 'father',
-        select:
-          'name photo memberNumber vanshaGenerationNumber generation gender isAlive'
+        select: 'name photo memberNumber vanshaGenerationNumber generation gender isAlive',
       })
       .populate({
         path: 'mother',
-        select:
-          'name photo memberNumber vanshaGenerationNumber generation gender isAlive'
+        select: 'name photo memberNumber vanshaGenerationNumber generation gender isAlive',
       })
       .populate({
         path: 'spouse',
-        select:
-          'name photo memberNumber vanshaGenerationNumber generation gender isAlive'
+        select: 'name photo memberNumber vanshaGenerationNumber generation gender isAlive',
       })
       .populate({
         path: 'grandfather',
-        select:
-          'name photo memberNumber vanshaGenerationNumber generation gender isAlive'
+        select: 'name photo memberNumber vanshaGenerationNumber generation gender isAlive',
       })
       .populate({
         path: 'grandmother',
-        select:
-          'name photo memberNumber vanshaGenerationNumber generation gender isAlive'
+        select: 'name photo memberNumber vanshaGenerationNumber generation gender isAlive',
       })
       .populate({
         path: 'guardian',
-        select:
-          'name photo memberNumber vanshaGenerationNumber generation gender isAlive'
+        select: 'name photo memberNumber vanshaGenerationNumber generation gender isAlive',
       })
       .lean();
 
-    // Build lineage-based tree
     const treeData = buildLineageTree(members, family);
 
     res.status(200).json({
@@ -318,6 +340,7 @@ export const getFamilyTreeByFamily = async (req, res) => {
         name: family.familyName,
         number: family.familyNumber,
         vanshaGenerationNumber: family.vanshaGenerationNumber,
+        totalGenerations: family.totalGenerations,
         status: family.status,
       },
     });
@@ -330,7 +353,9 @@ export const getFamilyTreeByFamily = async (req, res) => {
   }
 };
 
-// ⭐ UPDATED: getFamilyById - Removed rollNumber from select
+// ============================================================
+// GET FAMILY BY ID
+// ============================================================
 export const getFamilyById = async (req, res) => {
   try {
     const family = await Family.findById(req.params.id)
@@ -346,17 +371,26 @@ export const getFamilyById = async (req, res) => {
       .select(
         'name photo memberNumber vanshaGenerationNumber gender dob isAlive generation relationship'
       )
-      .sort({ createdAt: -1 })
+      .sort({ generation: 1, name: 1 })
       .limit(100);
 
     const memberCount = await Member.countDocuments({ family: family._id });
-    const generations = await Member.distinct('generation', { family: family._id });
+    
+    // ⭐ Calculate totalGenerations from actual data
+    const allMembers = await Member.find({ family: family._id })
+      .select('generation')
+      .lean();
+    
+    let totalGenerations = 0;
+    if (allMembers.length > 0) {
+      totalGenerations = Math.max(...allMembers.map(m => m.generation || 1));
+    }
 
     res.json({
       ...family.toObject(),
       members,
       memberCount,
-      generationCount: generations.length,
+      totalGenerations,
     });
   } catch (error) {
     console.error('getFamilyById Error:', error);
@@ -364,7 +398,9 @@ export const getFamilyById = async (req, res) => {
   }
 };
 
-// ✅ UPDATED: createFamily with retry logic for duplicate familyNumber
+// ============================================================
+// CREATE FAMILY
+// ============================================================
 export const createFamily = async (req, res) => {
   try {
     const familyData = {
@@ -372,16 +408,13 @@ export const createFamily = async (req, res) => {
       familyPhoto: req.file?.path || null,
     };
 
-    // Handle house creation/finding by houseNumber
+    // ⭐ STEP 1: Handle house creation/finding by houseNumber
     let house = null;
-    
-    // Check if houseNumber is provided (from frontend)
+
     if (familyData.houseNumber) {
-      // Try to find existing house by houseNumber
       house = await House.findOne({ houseNumber: familyData.houseNumber });
-      
+
       if (!house) {
-        // Create new house with the provided house number and name
         house = new House({
           houseNumber: familyData.houseNumber,
           houseName: familyData.houseName || '',
@@ -393,32 +426,67 @@ export const createFamily = async (req, res) => {
         });
         await house.save();
         console.log(`🏠 New house created: ${house.houseNumber}`);
-      } else {
-        console.log(`🏠 Existing house found: ${house.houseNumber}`);
       }
-      
-      // Set the house reference
+
       familyData.house = house._id;
-      
-      // Remove houseNumber and houseName from family data (they belong to house)
       delete familyData.houseNumber;
       delete familyData.houseName;
     }
 
-    // Validate house exists
     if (!familyData.house) {
-      return res.status(400).json({ 
-        message: 'House is required. Please provide a house number.' 
+      return res.status(400).json({
+        success: false,
+        message: 'House is required. Please provide a house number.',
       });
     }
 
-    // Validate house exists in database
     const houseExists = await House.findById(familyData.house);
     if (!houseExists) {
-      return res.status(400).json({ message: 'House not found' });
+      return res.status(400).json({
+        success: false,
+        message: 'House not found',
+      });
     }
 
-    // ✅ RETRY LOGIC for duplicate familyNumber (race condition safe)
+    // ⭐ STEP 2: DUPLICATE PREVENTION
+    if (familyData.familyName && familyData.house) {
+      const existingFamily = await Family.findOne({
+        familyName: { $regex: `^${familyData.familyName.trim()}$`, $options: 'i' },
+        house: familyData.house,
+        status: 'open',
+      });
+
+      if (existingFamily) {
+        return res.status(409).json({
+          success: false,
+          message: `यो परिवार पहिले नै यस घरमा दर्ता भइसकेको छ: ${existingFamily.familyName} (परिवार नं. ${existingFamily.familyNumber})। कृपया जाँच गर्नुहोस्।`,
+          existingFamily: {
+            _id: existingFamily._id,
+            familyName: existingFamily.familyName,
+            familyNumber: existingFamily.familyNumber,
+          },
+        });
+      }
+    }
+
+    // ⭐ STEP 3: Handle family head (ObjectId OR manual name)
+    if (familyData.familyHead) {
+      // Check if it's a valid ObjectId
+      if (familyData.familyHead.length === 24) {
+        const member = await Member.findById(familyData.familyHead);
+        if (!member) {
+          // Not a valid member - treat as manual name
+          familyData.familyHeadName = familyData.familyHead;
+          familyData.familyHead = null;
+        }
+      } else {
+        // Manual name entry
+        familyData.familyHeadName = familyData.familyHead;
+        familyData.familyHead = null;
+      }
+    }
+
+    // ⭐ STEP 4: RETRY LOGIC for duplicate familyNumber
     let family;
     let retries = 5;
     while (retries > 0) {
@@ -428,9 +496,9 @@ export const createFamily = async (req, res) => {
         break;
       } catch (err) {
         if (err.code === 11000 && err.keyPattern?.familyNumber) {
-          // Duplicate familyNumber — regenerate and retry
           const lastFamily = await Family.findOne({ house: familyData.house })
-            .sort({ familyNumber: -1 }).lean();
+            .sort({ familyNumber: -1 })
+            .lean();
           const lastNumber = lastFamily ? parseInt(lastFamily.familyNumber, 10) : 0;
           familyData.familyNumber = String(lastNumber + 1);
           retries--;
@@ -442,24 +510,26 @@ export const createFamily = async (req, res) => {
     }
 
     if (!family) {
-      return res.status(500).json({ 
-        message: 'Failed to generate unique family number. Please retry.' 
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to generate unique family number. Please retry.',
       });
     }
 
-    // Update house family count
+    // ⭐ STEP 5: Update house family count
     if (family.house) {
       await House.findByIdAndUpdate(family.house, {
         $inc: { familyCount: 1 },
       });
     }
 
+    // ⭐ STEP 6: Create notification
     const notification = new Notification({
       type: 'family_added',
       title: 'New Family Added',
       message: `Family "${family.familyName}" has been added to the system.`,
       data: { familyId: family._id },
-      createdBy: null,
+      createdBy: req.user?._id || null,
     });
     await notification.save();
 
@@ -469,14 +539,19 @@ export const createFamily = async (req, res) => {
     res.status(201).json(family);
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(400).json({ message: 'Family number already exists in this house' });
+      return res.status(400).json({
+        success: false,
+        message: 'यो परिवार नम्बर यस घरमा पहिले नै अवस्थित छ। कृपया फरक नाम प्रयोग गर्नुहोस्।',
+      });
     }
     console.error('createFamily Error:', error);
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
-// ⭐ UPDATED: updateFamily with houseNumber handling
+// ============================================================
+// UPDATE FAMILY
+// ============================================================
 export const updateFamily = async (req, res) => {
   try {
     const family = await Family.findById(req.params.id);
@@ -484,7 +559,6 @@ export const updateFamily = async (req, res) => {
       return res.status(404).json({ message: 'Family not found' });
     }
 
-    // Check if family is closed
     if (family.status === 'closed') {
       return res.status(403).json({
         message: 'Family is closed and cannot be modified. Please reopen to edit.',
@@ -496,7 +570,7 @@ export const updateFamily = async (req, res) => {
     // Handle house update by houseNumber
     if (updateData.houseNumber) {
       let house = await House.findOne({ houseNumber: updateData.houseNumber });
-      
+
       if (!house) {
         house = new House({
           houseNumber: updateData.houseNumber,
@@ -508,14 +582,28 @@ export const updateFamily = async (req, res) => {
           status: 'active',
         });
         await house.save();
-        console.log(`🏠 New house created: ${house.houseNumber}`);
       }
-      
+
       updateData.house = house._id;
       delete updateData.houseNumber;
       delete updateData.houseName;
     }
 
+    // ⭐ Handle family head (ObjectId OR manual name)
+    if (updateData.familyHead !== undefined) {
+      if (updateData.familyHead && updateData.familyHead.length === 24) {
+        const member = await Member.findById(updateData.familyHead);
+        if (!member) {
+          updateData.familyHeadName = updateData.familyHead;
+          updateData.familyHead = null;
+        }
+      } else if (updateData.familyHead) {
+        updateData.familyHeadName = updateData.familyHead;
+        updateData.familyHead = null;
+      }
+    }
+
+    // Handle old photo deletion
     if (req.file && family.familyPhoto) {
       const publicId = family.familyPhoto.split('/').pop().split('.')[0];
       await cloudinary.uploader.destroy(publicId).catch(() => {});
@@ -530,12 +618,17 @@ export const updateFamily = async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    // ⭐ Recalculate generations
+    if (updatedFamily.recalculateGenerations) {
+      await updatedFamily.recalculateGenerations();
+    }
+
     const notification = new Notification({
       type: 'family_updated',
       title: 'Family Updated',
       message: `Family "${updatedFamily.familyName}" has been updated.`,
       data: { familyId: updatedFamily._id },
-      createdBy: null,
+      createdBy: req.user?._id || null,
     });
     await notification.save();
 
@@ -552,6 +645,9 @@ export const updateFamily = async (req, res) => {
   }
 };
 
+// ============================================================
+// DELETE FAMILY
+// ============================================================
 export const deleteFamily = async (req, res) => {
   try {
     const family = await Family.findById(req.params.id);
@@ -571,7 +667,6 @@ export const deleteFamily = async (req, res) => {
       await cloudinary.uploader.destroy(publicId).catch(() => {});
     }
 
-    // Update house family count
     if (family.house) {
       await House.findByIdAndUpdate(family.house, {
         $inc: { familyCount: -1 },
@@ -589,6 +684,9 @@ export const deleteFamily = async (req, res) => {
   }
 };
 
+// ============================================================
+// CLOSE FAMILY
+// ============================================================
 export const closeFamily = async (req, res) => {
   try {
     const { id } = req.params;
@@ -614,7 +712,7 @@ export const closeFamily = async (req, res) => {
       title: 'Family Closed',
       message: `Family "${family.familyName}" has been closed.`,
       data: { familyId: family._id },
-      createdBy: null,
+      createdBy: req.user?._id || null,
     });
     await notification.save();
 
@@ -631,6 +729,9 @@ export const closeFamily = async (req, res) => {
   }
 };
 
+// ============================================================
+// REOPEN FAMILY
+// ============================================================
 export const reopenFamily = async (req, res) => {
   try {
     const { id } = req.params;
@@ -654,7 +755,7 @@ export const reopenFamily = async (req, res) => {
       title: 'Family Reopened',
       message: `Family "${family.familyName}" has been reopened.`,
       data: { familyId: family._id },
-      createdBy: null,
+      createdBy: req.user?._id || null,
     });
     await notification.save();
 
@@ -671,6 +772,9 @@ export const reopenFamily = async (req, res) => {
   }
 };
 
+// ============================================================
+// GET NEXT FAMILY NUMBER
+// ============================================================
 export const getNextFamilyNumber = async (req, res) => {
   try {
     const { houseId } = req.params;
@@ -695,37 +799,9 @@ export const getNextFamilyNumber = async (req, res) => {
   }
 };
 
-export const getNextVanshaNumber = async (req, res) => {
-  try {
-    const { familyId } = req.params;
-
-    const members = await Member.find({ family: familyId })
-      .select('vanshaGenerationNumber')
-      .lean();
-
-    let maxNumber = 0;
-    members.forEach((m) => {
-      if (m.vanshaGenerationNumber) {
-        const num = parseInt(m.vanshaGenerationNumber, 10);
-        if (!isNaN(num) && num > maxNumber) {
-          maxNumber = num;
-        }
-      }
-    });
-
-    const nextNumber = maxNumber + 1;
-
-    res.json({
-      familyId,
-      nextVanshaNumber: String(nextNumber),
-      suggestion: `Auto: ${nextNumber}`,
-    });
-  } catch (error) {
-    console.error('getNextVanshaNumber Error:', error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
+// ============================================================
+// GET FAMILY STATS
+// ============================================================
 export const getFamilyStats = async (req, res) => {
   try {
     const [totalFamilies, memberStats] = await Promise.all([
@@ -756,7 +832,9 @@ export const getFamilyStats = async (req, res) => {
   }
 };
 
-// ⭐ NEW: Get Bansha Numbers for a specific family
+// ============================================================
+// GET FAMILY BANSHA NUMBERS (with preservation)
+// ============================================================
 export const getFamilyBanshaNumbers = async (req, res) => {
   try {
     const { familyId } = req.params;
@@ -780,21 +858,28 @@ export const getFamilyBanshaNumbers = async (req, res) => {
       .select('vanshaGenerationNumber')
       .lean();
 
-    // Get unique Bansha Numbers
-    const banshaNumbers = [...new Set(
-      members
-        .map(m => m.vanshaGenerationNumber)
-        .filter(num => num && num.trim() !== '')
-    )].sort((a, b) => {
-      // Try numeric sort first
+    const banshaNumbers = [
+      ...new Set(
+        members
+          .map((m) => m.vanshaGenerationNumber)
+          .filter((num) => num && num.trim() !== '')
+      ),
+    ].sort((a, b) => {
       const numA = parseInt(a, 10);
       const numB = parseInt(b, 10);
       if (!isNaN(numA) && !isNaN(numB)) {
         return numA - numB;
       }
-      // Fallback to string sort
       return a.localeCompare(b);
     });
+
+    // ⭐ Include family's default Bansha number
+    if (
+      family.vanshaGenerationNumber &&
+      !banshaNumbers.includes(family.vanshaGenerationNumber)
+    ) {
+      banshaNumbers.push(family.vanshaGenerationNumber);
+    }
 
     res.json({
       success: true,
@@ -804,6 +889,7 @@ export const getFamilyBanshaNumbers = async (req, res) => {
         name: family.familyName,
         number: family.familyNumber,
         houseIdentifier: family.houseIdentifier,
+        defaultBansha: family.vanshaGenerationNumber,
       },
     });
   } catch (error) {
@@ -813,4 +899,21 @@ export const getFamilyBanshaNumbers = async (req, res) => {
       message: error.message,
     });
   }
+};
+
+// ============================================================
+// EXPORTS
+// ============================================================
+export default {
+  getFamilies,
+  getFamilyById,
+  getFamilyTreeByFamily,
+  createFamily,
+  updateFamily,
+  deleteFamily,
+  closeFamily,
+  reopenFamily,
+  getNextFamilyNumber,
+  getFamilyStats,
+  getFamilyBanshaNumbers,
 };

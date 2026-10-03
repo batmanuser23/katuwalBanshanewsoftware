@@ -91,3 +91,15 @@ export const relationships = [
   { value: 'फुपू', label: 'फुपू' },
   { value: 'फुपाजु', label: 'फुपाजु' },
 ];
+
+// src/data/options.js - ADD THIS
+export const gotraOptions = [
+  { value: 'माण्डप', label: 'माण्डप' },
+  { value: 'कश्यप', label: 'कश्यप' },
+  { value: 'भारद्वाज', label: 'भारद्वाज' },
+  { value: 'वशिष्ठ', label: 'वशिष्ठ' },
+  { value: 'गौतम', label: 'गौतम' },
+  { value: 'अत्रि', label: 'अत्रि' },
+  { value: 'विश्वामित्र', label: 'विश्वामित्र' },
+  { value: 'जमदग्नि', label: 'जमदग्नि' },
+];

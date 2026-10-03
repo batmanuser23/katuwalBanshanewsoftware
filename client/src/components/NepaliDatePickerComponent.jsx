@@ -1,272 +1,22 @@
-// // src/components/NepaliDatePicker.jsx
-// import React, { useState, useEffect } from 'react';
-// import { NepaliDatePicker } from "nepali-datepicker-reactjs";
-// import "nepali-datepicker-reactjs/dist/index.css";
-// import { FaCalendar } from 'react-icons/fa';
+// src/components/NepaliDatePickerComponent.jsx - COMPLETE UPDATED
+// Features:
+// - Manual typing support (both AD and BS dates)
+// - Automatic English (AD) → Nepali (BS) conversion
+// - Calendar picker
+// - Validation
+// - Mobile-friendly
+// - Not clipped by parent containers
 
-// const NepaliDatePickerComponent = ({
-//   label,
-//   name,
-//   value,
-//   onChange,
-//   required = false,
-//   className = '',
-//   placeholder = 'Select date',
-// }) => {
-//   const [date, setDate] = useState(value || '');
-
-//   useEffect(() => {
-//     setDate(value || '');
-//   }, [value]);
-
-//   const handleDateChange = (selectedDate) => {
-//     const dateStr = selectedDate || '';
-//     setDate(dateStr);
-//     onChange(name, dateStr);
-//   };
-
-//   return (
-//     <div className={`w-full ${className}`}>
-//       <label className="block text-sm font-medium text-gray-700 mb-1">
-//         {label} {required && <span className="text-red-500">*</span>}
-//       </label>
-//       <div className="relative">
-//         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
-//           <FaCalendar className="h-4 w-4" />
-//         </div>
-//         <NepaliDatePicker
-//           value={date}
-//           onChange={handleDateChange}
-//           placeholder={placeholder}
-//           className="w-full pl-9 pr-3 py-2.5 rounded-lg border-2 border-gray-200 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-//           language="en"
-//         />
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default NepaliDatePickerComponent;
-
-// // src/components/NepaliDatePickerComponent.jsx
-// import React, { useState, useEffect } from 'react';
-// import { NepaliDatePicker } from "nepali-datepicker-reactjs";
-// import "nepali-datepicker-reactjs/dist/index.css";
-// import { FaCalendar } from 'react-icons/fa';
-
-// const NepaliDatePickerComponent = ({
-//   label,
-//   name,
-//   value,
-//   onChange,
-//   required = false,
-//   className = '',
-//   placeholder = 'Select date',
-// }) => {
-//   const [date, setDate] = useState(value || '');
-
-//   useEffect(() => {
-//     setDate(value || '');
-//   }, [value]);
-
-//   const handleDateChange = (selectedDate) => {
-//     const dateStr = selectedDate || '';
-//     setDate(dateStr);
-//     onChange(name, dateStr);
-//   };
-
-//   return (
-//     <div className={`w-full ${className}`}>
-//       <label className="block text-xs font-medium text-gray-700 mb-1">
-//         {label} {required && <span className="text-red-500">*</span>}
-//       </label>
-//       <div className="relative">
-//         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-600 z-10">
-//           <FaCalendar className="h-3.5 w-3.5" />
-//         </div>
-//         <NepaliDatePicker
-//           value={date}
-//           onChange={handleDateChange}
-//           placeholder={placeholder}
-//           className="w-full pl-8 pr-2.5 py-2 rounded-lg border border-gray-200 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition-all hover:border-green-300 text-sm text-gray-700"
-//           language="en"
-//         />
-//       </div>
-//       <style jsx>{`
-//         /* Main container */
-//         .nepali-date-picker {
-//           width: 100% !important;
-//         }
-        
-//         /* Input field */
-//         .nepali-date-picker .date-picker-input {
-//           border-radius: 0.5rem !important;
-//           border-color: #e5e7eb !important;
-//           padding: 0.5rem 0.625rem 0.5rem 2rem !important;
-//           font-size: 0.875rem !important;
-//           height: 42px !important;
-//           background-color: white !important;
-//         }
-        
-//         .nepali-date-picker .date-picker-input:focus {
-//           border-color: #22c55e !important;
-//           box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15) !important;
-//           outline: none !important;
-//         }
-        
-//         .nepali-date-picker .date-picker-input:hover {
-//           border-color: #86efac !important;
-//         }
-        
-//         /* Calendar popup */
-//         .nepali-date-picker .date-picker-calendar {
-//           border-radius: 0.75rem !important;
-//           border: 1px solid #d1fae5 !important;
-//           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02) !important;
-//           padding: 0.75rem !important;
-//           background: white !important;
-//           min-width: 300px !important;
-//         }
-        
-//         /* Header */
-//         .nepali-date-picker .date-picker-calendar .date-picker-header {
-//           background: linear-gradient(135deg, #16a34a, #059669) !important;
-//           padding: 0.625rem 0.75rem !important;
-//           border-radius: 0.5rem !important;
-//           margin-bottom: 0.75rem !important;
-//           border: none !important;
-//         }
-        
-//         /* Month/Year selector */
-//         .nepali-date-picker .date-picker-calendar .month-year-selector {
-//           color: white !important;
-//           font-weight: 600 !important;
-//           font-size: 0.875rem !important;
-//         }
-        
-//         /* Navigation arrows */
-//         .nepali-date-picker .date-picker-calendar .month-year-nav {
-//           color: white !important;
-//           background: rgba(255, 255, 255, 0.2) !important;
-//           border-radius: 0.375rem !important;
-//           padding: 0.25rem 0.5rem !important;
-//           transition: all 0.2s !important;
-//           border: none !important;
-//         }
-        
-//         .nepali-date-picker .date-picker-calendar .month-year-nav:hover {
-//           background: rgba(255, 255, 255, 0.3) !important;
-//         }
-        
-//         /* Weekday labels */
-//         .nepali-date-picker .date-picker-calendar .day-name {
-//           color: #16a34a !important;
-//           font-weight: 700 !important;
-//           font-size: 0.7rem !important;
-//           text-transform: uppercase !important;
-//           letter-spacing: 0.05em !important;
-//           padding: 0.25rem !important;
-//         }
-        
-//         /* Day cells */
-//         .nepali-date-picker .date-picker-calendar .day-cell {
-//           padding: 0.25rem !important;
-//           font-size: 0.8rem !important;
-//           border-radius: 0.375rem !important;
-//           transition: all 0.15s !important;
-//           cursor: pointer !important;
-//         }
-        
-//         .nepali-date-picker .date-picker-calendar .day-cell:hover:not(.selected-day) {
-//           background-color: #f0fdf4 !important;
-//           color: #16a34a !important;
-//         }
-        
-//         /* Selected day - Green */
-//         .nepali-date-picker .date-picker-calendar .selected-day {
-//           background: linear-gradient(135deg, #16a34a, #059669) !important;
-//           color: white !important;
-//           border-radius: 0.375rem !important;
-//           font-weight: 600 !important;
-//           box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3) !important;
-//         }
-        
-//         /* Today - Light Green border */
-//         .nepali-date-picker .date-picker-calendar .today-day {
-//           border: 2px solid #16a34a !important;
-//           border-radius: 0.375rem !important;
-//           background: #f0fdf4 !important;
-//           color: #16a34a !important;
-//           font-weight: 600 !important;
-//         }
-        
-//         /* Today when selected */
-//         .nepali-date-picker .date-picker-calendar .today-day.selected-day {
-//           background: linear-gradient(135deg, #16a34a, #059669) !important;
-//           color: white !important;
-//           border: 2px solid #16a34a !important;
-//         }
-        
-//         /* Disabled dates */
-//         .nepali-date-picker .date-picker-calendar .day-cell.disabled {
-//           color: #d1d5db !important;
-//           cursor: not-allowed !important;
-//         }
-        
-//         /* Other month dates */
-//         .nepali-date-picker .date-picker-calendar .day-cell.other-month {
-//           color: #9ca3af !important;
-//         }
-        
-//         /* Footer buttons */
-//         .nepali-date-picker .date-picker-calendar .date-picker-footer {
-//           border-top: 1px solid #f3f4f6 !important;
-//           padding-top: 0.5rem !important;
-//           margin-top: 0.5rem !important;
-//         }
-        
-//         .nepali-date-picker .date-picker-calendar .date-picker-footer button {
-//           color: #16a34a !important;
-//           font-weight: 500 !important;
-//           transition: all 0.2s !important;
-//           border-radius: 0.375rem !important;
-//           padding: 0.25rem 0.75rem !important;
-//         }
-        
-//         .nepali-date-picker .date-picker-calendar .date-picker-footer button:hover {
-//           background-color: #f0fdf4 !important;
-//         }
-        
-//         /* Responsive adjustments */
-//         @media (max-width: 640px) {
-//           .nepali-date-picker .date-picker-calendar {
-//             min-width: 280px !important;
-//             padding: 0.5rem !important;
-//           }
-          
-//           .nepali-date-picker .date-picker-calendar .day-cell {
-//             padding: 0.15rem !important;
-//             font-size: 0.75rem !important;
-//           }
-          
-//           .nepali-date-picker .date-picker-calendar .day-name {
-//             font-size: 0.65rem !important;
-//           }
-//         }
-//       `}</style>
-//     </div>
-//   );
-// };
-
-// export default NepaliDatePickerComponent;
-
-
-// src/components/NepaliDatePickerComponent.jsx - COMPLETE UPDATED FILE
-
-import React, { useState, useEffect, useRef } from 'react';
-import { NepaliDatePicker } from "nepali-datepicker-reactjs";
-import "nepali-datepicker-reactjs/dist/index.css";
-import { FaCalendar } from 'react-icons/fa';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { FaCalendarAlt, FaChevronLeft, FaChevronRight, FaTimes, FaGlobe } from 'react-icons/fa';
+import {
+  NEPALI_MONTHS,
+  NEPALI_MONTHS_EN,
+  getDaysInNepaliMonth,
+  adToBs,
+  bsToAd,
+  parseDateString,
+} from '../utils/nepaliDateConverter';
 
 const NepaliDatePickerComponent = ({
   label,
@@ -274,224 +24,429 @@ const NepaliDatePickerComponent = ({
   value,
   onChange,
   required = false,
+  error,
+  placeholder = 'मिति छान्नुहोस् वा टाइप गर्नुहोस्',
   className = '',
-  placeholder = 'मिति चयन गर्नुहोस्',
+  disabled = false,
+  showAdInput = true,
 }) => {
-  const [date, setDate] = useState(value || '');
-  const containerRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [inputMode, setInputMode] = useState('BS'); // 'BS' or 'AD'
+  const [viewYear, setViewYear] = useState(2081);
+  const [viewMonth, setViewMonth] = useState(1);
+  const [parseError, setParseError] = useState('');
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
 
-  useEffect(() => {
-    setDate(value || '');
+  // ============================================================
+  // Parse initial value into BS date
+  // ============================================================
+  const bsValue = useMemo(() => {
+    if (!value) return null;
+
+    // Try to parse as BS string first (YYYY-MM-DD with year 2000-2090)
+    if (typeof value === 'string') {
+      const parsed = parseDateString(value);
+      if (parsed) {
+        if (parsed.type === 'BS') {
+          return { year: parsed.year, month: parsed.month, day: parsed.day };
+        }
+        // AD date - convert to BS
+        const adDate = new Date(parsed.year, parsed.month - 1, parsed.day);
+        return adToBs(adDate);
+      }
+    }
+
+    // If Date object - convert to BS
+    if (value instanceof Date) {
+      return adToBs(value);
+    }
+
+    return null;
   }, [value]);
 
-  const handleDateChange = (selectedDate) => {
-    const dateStr = selectedDate || '';
-    setDate(dateStr);
-    onChange(name, dateStr);
+  // ============================================================
+  // Sync view year/month with value
+  // ============================================================
+  useEffect(() => {
+    if (bsValue) {
+      setViewYear(bsValue.year);
+      setViewMonth(bsValue.month);
+      setInputValue(bsValue.formatted);
+    }
+  }, [bsValue]);
+
+  // ============================================================
+  // Close on outside click
+  // ============================================================
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // ============================================================
+  // Build calendar grid
+  // ============================================================
+  const calendarDays = useMemo(() => {
+    const daysInMonth = getDaysInNepaliMonth(viewYear, viewMonth);
+    const days = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      days.push(d);
+    }
+    return days;
+  }, [viewYear, viewMonth]);
+
+  // ============================================================
+  // Navigation
+  // ============================================================
+  const goToPrevMonth = () => {
+    if (viewMonth === 1) {
+      setViewMonth(12);
+      setViewYear(viewYear - 1);
+    } else {
+      setViewMonth(viewMonth - 1);
+    }
   };
 
+  const goToNextMonth = () => {
+    if (viewMonth === 12) {
+      setViewMonth(1);
+      setViewYear(viewYear + 1);
+    } else {
+      setViewMonth(viewMonth + 1);
+    }
+  };
+
+  // ============================================================
+  // Handle date selection from calendar
+  // ============================================================
+  const handleDateSelect = (day) => {
+    const bsDate = { year: viewYear, month: viewMonth, day };
+    const formatted = `${viewYear}-${String(viewMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    setInputValue(formatted);
+    setParseError('');
+    setIsOpen(false);
+
+    if (onChange) {
+      onChange(name, formatted);
+    }
+  };
+
+  // ============================================================
+  // Handle manual input change
+  // ============================================================
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setInputValue(val);
+    setParseError('');
+
+    // Try to parse as user types
+    if (!val.trim()) {
+      if (onChange) onChange(name, '');
+      return;
+    }
+
+    // Only validate on complete dates
+    const parsed = parseDateString(val);
+    if (parsed) {
+      // If BS date
+      if (parsed.type === 'BS') {
+        // Validate BS date
+        const maxDay = getDaysInNepaliMonth(parsed.year, parsed.month);
+        if (parsed.day > maxDay) {
+          setParseError(`यो महिनामा ${maxDay} दिन मात्र छ`);
+          return;
+        }
+        if (onChange) onChange(name, parsed.year + '-' + String(parsed.month).padStart(2, '0') + '-' + String(parsed.day).padStart(2, '0'));
+        setViewYear(parsed.year);
+        setViewMonth(parsed.month);
+      } else {
+        // AD date - convert to BS
+        const adDate = new Date(parsed.year, parsed.month - 1, parsed.day);
+        if (!isNaN(adDate.getTime())) {
+          const bsDate = adToBs(adDate);
+          if (bsDate) {
+            setViewYear(bsDate.year);
+            setViewMonth(bsDate.month);
+            if (onChange) onChange(name, bsDate.formatted);
+          }
+        }
+      }
+    }
+  };
+
+  // ============================================================
+  // Handle blur - validate final value
+  // ============================================================
+  const handleBlur = () => {
+    if (!inputValue.trim()) return;
+
+    const parsed = parseDateString(inputValue);
+    if (!parsed) {
+      setParseError('अवैध मिति ढाँचा। YYYY-MM-DD प्रयोग गर्नुहोस्');
+      return;
+    }
+
+    if (parsed.type === 'BS') {
+      const maxDay = getDaysInNepaliMonth(parsed.year, parsed.month);
+      if (parsed.day > maxDay) {
+        setParseError(`यो महिनामा ${maxDay} दिन मात्र छ`);
+        return;
+      }
+      setParseError('');
+      if (onChange) onChange(name, parsed.year + '-' + String(parsed.month).padStart(2, '0') + '-' + String(parsed.day).padStart(2, '0'));
+    } else {
+      const adDate = new Date(parsed.year, parsed.month - 1, parsed.day);
+      if (isNaN(adDate.getTime())) {
+        setParseError('अवैध अंग्रेजी मिति');
+        return;
+      }
+      const bsDate = adToBs(adDate);
+      if (bsDate) {
+        setParseError('');
+        if (onChange) onChange(name, bsDate.formatted);
+      }
+    }
+  };
+
+  // ============================================================
+  // Handle key down
+  // ============================================================
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleBlur();
+      setIsOpen(false);
+    }
+  };
+
+  // ============================================================
+  // Clear value
+  // ============================================================
+  const clearValue = (e) => {
+    e.stopPropagation();
+    setInputValue('');
+    setParseError('');
+    if (onChange) onChange(name, '');
+  };
+
+  // ============================================================
+  // Toggle input mode (BS/AD)
+  // ============================================================
+  const toggleInputMode = () => {
+    setInputMode(prev => prev === 'BS' ? 'AD' : 'BS');
+    setInputValue('');
+    setParseError('');
+  };
+
+  // ============================================================
+  // Get display placeholder based on mode
+  // ============================================================
+  const getPlaceholder = () => {
+    if (inputMode === 'AD') {
+      return 'YYYY-MM-DD (English)';
+    }
+    return placeholder;
+  };
+
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
-    <div className={`w-full ${className}`} ref={containerRef}>
-      <label className="block text-xs font-medium text-gray-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <div className="relative" style={{ position: 'relative', zIndex: 10 }}>
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-600 z-10 pointer-events-none">
-          <FaCalendar className="h-3.5 w-3.5" />
+    <div className={`relative ${className}`} ref={dropdownRef}>
+      {label && (
+        <label className="block text-xs font-medium text-gray-700 mb-1">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+      )}
+
+      <div className="relative">
+        {/* Calendar icon */}
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
+          <FaCalendarAlt className="h-4 w-4" />
         </div>
-        <NepaliDatePicker
-          value={date}
-          onChange={handleDateChange}
-          placeholder={placeholder}
-          className="w-full pl-8 pr-2.5 py-2 rounded-lg border border-gray-200 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition-all hover:border-green-300 text-sm text-gray-700"
-          language="en"
+
+        {/* Input */}
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          onFocus={() => setIsOpen(true)}
+          onKeyDown={handleKeyDown}
+          placeholder={getPlaceholder()}
+          disabled={disabled}
+          className={`
+            w-full px-3 py-2.5 rounded-lg border-2 transition-all duration-200
+            pl-9 pr-20
+            ${isOpen ? 'border-green-500 shadow-md ring-2 ring-green-200' : 'border-gray-200 hover:border-gray-300'}
+            ${error || parseError ? 'border-red-500 ring-2 ring-red-200' : ''}
+            ${disabled ? 'bg-gray-50 cursor-not-allowed' : ''}
+            focus:outline-none
+          `}
         />
+
+        {/* Right side buttons */}
+        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-0.5">
+          {/* AD/BS toggle */}
+          {showAdInput && (
+            <button
+              type="button"
+              onClick={toggleInputMode}
+              className={`
+                px-1.5 py-0.5 text-[9px] font-bold rounded transition-colors
+                ${inputMode === 'AD' 
+                  ? 'bg-blue-100 text-blue-700' 
+                  : 'bg-green-100 text-green-700'}
+                hover:opacity-80
+              `}
+              title={inputMode === 'AD' ? 'Switch to Nepali date' : 'Switch to English date'}
+            >
+              {inputMode}
+            </button>
+          )}
+
+          {/* Clear */}
+          {inputValue && (
+            <button
+              type="button"
+              onClick={clearValue}
+              className="p-0.5 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <FaTimes className="h-3 w-3 text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
+        </div>
       </div>
-      <style jsx>{`
-        /* ✅ FIXED: Calendar positioning - not clipped */
-        .nepali-date-picker {
-          width: 100% !important;
-          position: relative !important;
-        }
-        
-        .nepali-date-picker .date-picker-input {
-          border-radius: 0.5rem !important;
-          border-color: #e5e7eb !important;
-          padding: 0.5rem 0.625rem 0.5rem 2rem !important;
-          font-size: 0.875rem !important;
-          height: 42px !important;
-          background-color: white !important;
-          width: 100% !important;
-        }
-        
-        .nepali-date-picker .date-picker-input:focus {
-          border-color: #22c55e !important;
-          box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15) !important;
-          outline: none !important;
-        }
-        
-        .nepali-date-picker .date-picker-input:hover {
-          border-color: #86efac !important;
-        }
-        
-        /* ✅ FIXED: Calendar popup - properly positioned and visible */
-        .nepali-date-picker .date-picker-calendar {
-          position: fixed !important;
-          top: auto !important;
-          left: auto !important;
-          bottom: auto !important;
-          right: auto !important;
-          border-radius: 0.75rem !important;
-          border: 1px solid #d1fae5 !important;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(0, 0, 0, 0.05) !important;
-          padding: 0.75rem !important;
-          background: white !important;
-          min-width: 320px !important;
-          max-width: 90vw !important;
-          z-index: 999999 !important;
-          transform: translateY(0) !important;
-          max-height: 80vh !important;
-          overflow: auto !important;
-        }
-        
-        /* ✅ FIXED: Center calendar on mobile */
-        @media (max-width: 640px) {
-          .nepali-date-picker .date-picker-calendar {
-            position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            min-width: 90vw !important;
-            max-height: 80vh !important;
-            border-radius: 1rem !important;
-            z-index: 999999 !important;
-          }
-        }
-        
-        /* ✅ Calendar header - Green gradient */
-        .nepali-date-picker .date-picker-calendar .date-picker-header {
-          background: linear-gradient(135deg, #16a34a, #059669) !important;
-          padding: 0.625rem 0.75rem !important;
-          border-radius: 0.5rem !important;
-          margin-bottom: 0.75rem !important;
-          border: none !important;
-        }
-        
-        .nepali-date-picker .date-picker-calendar .month-year-selector {
-          color: white !important;
-          font-weight: 600 !important;
-          font-size: 0.875rem !important;
-        }
-        
-        .nepali-date-picker .date-picker-calendar .month-year-nav {
-          color: white !important;
-          background: rgba(255, 255, 255, 0.2) !important;
-          border-radius: 0.375rem !important;
-          padding: 0.25rem 0.5rem !important;
-          transition: all 0.2s !important;
-          border: none !important;
-        }
-        
-        .nepali-date-picker .date-picker-calendar .month-year-nav:hover {
-          background: rgba(255, 255, 255, 0.3) !important;
-        }
-        
-        /* ✅ Weekday labels - Green */
-        .nepali-date-picker .date-picker-calendar .day-name {
-          color: #16a34a !important;
-          font-weight: 700 !important;
-          font-size: 0.7rem !important;
-          text-transform: uppercase !important;
-          letter-spacing: 0.05em !important;
-          padding: 0.25rem !important;
-        }
-        
-        /* ✅ Day cells */
-        .nepali-date-picker .date-picker-calendar .day-cell {
-          padding: 0.25rem !important;
-          font-size: 0.8rem !important;
-          border-radius: 0.375rem !important;
-          transition: all 0.15s !important;
-          cursor: pointer !important;
-        }
-        
-        .nepali-date-picker .date-picker-calendar .day-cell:hover:not(.selected-day) {
-          background-color: #f0fdf4 !important;
-          color: #16a34a !important;
-        }
-        
-        /* ✅ Selected day - Green gradient */
-        .nepali-date-picker .date-picker-calendar .selected-day {
-          background: linear-gradient(135deg, #16a34a, #059669) !important;
-          color: white !important;
-          border-radius: 0.375rem !important;
-          font-weight: 600 !important;
-          box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3) !important;
-        }
-        
-        /* ✅ Today - Light Green border */
-        .nepali-date-picker .date-picker-calendar .today-day {
-          border: 2px solid #16a34a !important;
-          border-radius: 0.375rem !important;
-          background: #f0fdf4 !important;
-          color: #16a34a !important;
-          font-weight: 600 !important;
-        }
-        
-        /* ✅ Today when selected */
-        .nepali-date-picker .date-picker-calendar .today-day.selected-day {
-          background: linear-gradient(135deg, #16a34a, #059669) !important;
-          color: white !important;
-          border: 2px solid #16a34a !important;
-        }
-        
-        /* Disabled dates */
-        .nepali-date-picker .date-picker-calendar .day-cell.disabled {
-          color: #d1d5db !important;
-          cursor: not-allowed !important;
-        }
-        
-        /* Other month dates */
-        .nepali-date-picker .date-picker-calendar .day-cell.other-month {
-          color: #9ca3af !important;
-        }
-        
-        /* ✅ Footer buttons */
-        .nepali-date-picker .date-picker-calendar .date-picker-footer {
-          border-top: 1px solid #f3f4f6 !important;
-          padding-top: 0.5rem !important;
-          margin-top: 0.5rem !important;
-        }
-        
-        .nepali-date-picker .date-picker-calendar .date-picker-footer button {
-          color: #16a34a !important;
-          font-weight: 500 !important;
-          transition: all 0.2s !important;
-          border-radius: 0.375rem !important;
-          padding: 0.25rem 0.75rem !important;
-        }
-        
-        .nepali-date-picker .date-picker-calendar .date-picker-footer button:hover {
-          background-color: #f0fdf4 !important;
-        }
-        
-        /* ✅ Responsive adjustments */
-        @media (max-width: 640px) {
-          .nepali-date-picker .date-picker-calendar {
-            min-width: 90vw !important;
-            padding: 0.75rem !important;
-          }
+
+      {/* Error messages */}
+      {(error || parseError) && (
+        <p className="mt-1 text-xs text-red-500">{error || parseError}</p>
+      )}
+
+      {/* Help text */}
+      {!error && !parseError && (
+        <p className="mt-0.5 text-[10px] text-gray-400">
+          {inputMode === 'AD' 
+            ? 'अंग्रेजी मिति टाइप गर्नुहोस् (स्वत: नेपालीमा रूपान्तरण हुनेछ)'
+            : 'नेपाली मिति टाइप गर्नुहोस् वा क्यालेन्डरबाट छान्नुहोस्'}
+        </p>
+      )}
+
+      {/* Calendar Dropdown */}
+      {isOpen && !disabled && (
+        <div className="absolute z-50 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl overflow-hidden"
+             style={{ minWidth: '280px', maxWidth: '320px' }}>
           
-          .nepali-date-picker .date-picker-calendar .day-cell {
-            padding: 0.35rem !important;
-            font-size: 0.85rem !important;
-          }
-          
-          .nepali-date-picker .date-picker-calendar .day-name {
-            font-size: 0.7rem !important;
-          }
-        }
-      `}</style>
+          {/* Header */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-2 border-b border-green-100">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={goToPrevMonth}
+                className="p-1.5 hover:bg-white/80 rounded-lg transition-colors"
+              >
+                <FaChevronLeft className="h-3 w-3 text-green-600" />
+              </button>
+              
+              <div className="text-center">
+                <div className="text-sm font-semibold text-green-800">
+                  {NEPALI_MONTHS[viewMonth - 1]} {viewYear}
+                </div>
+                <div className="text-[10px] text-gray-500">
+                  {NEPALI_MONTHS_EN[viewMonth - 1]}
+                </div>
+              </div>
+              
+              <button
+                type="button"
+                onClick={goToNextMonth}
+                className="p-1.5 hover:bg-white/80 rounded-lg transition-colors"
+              >
+                <FaChevronRight className="h-3 w-3 text-green-600" />
+              </button>
+            </div>
+          </div>
+
+          {/* Day of week headers */}
+          <div className="grid grid-cols-7 gap-0.5 p-1.5 border-b border-gray-100">
+            {['आ', 'सो', 'मं', 'बु', 'बि', 'शु', 'श'].map((day, i) => (
+              <div
+                key={i}
+                className={`text-center text-[10px] font-medium py-1 ${
+                  i === 6 ? 'text-red-500' : 'text-gray-500'
+                }`}
+              >
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar days */}
+          <div className="grid grid-cols-7 gap-0.5 p-1.5 max-h-56 overflow-y-auto">
+            {calendarDays.map((day) => {
+              const isSelected =
+                bsValue &&
+                bsValue.year === viewYear &&
+                bsValue.month === viewMonth &&
+                bsValue.day === day;
+
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => handleDateSelect(day)}
+                  className={`
+                    aspect-square text-xs rounded-lg transition-all
+                    ${isSelected
+                      ? 'bg-green-500 text-white font-semibold shadow-md'
+                      : 'hover:bg-green-50 text-gray-700'}
+                  `}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Footer */}
+          <div className="p-1.5 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
+            <button
+              type="button"
+              onClick={() => {
+                const today = new Date();
+                const todayBs = adToBs(today);
+                if (todayBs) {
+                  setViewYear(todayBs.year);
+                  setViewMonth(todayBs.month);
+                  handleDateSelect(todayBs.day);
+                }
+              }}
+              className="text-xs text-green-600 hover:text-green-700 font-medium"
+            >
+              आज
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              बन्द गर्नुहोस्
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

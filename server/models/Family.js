@@ -1,4 +1,8 @@
-// models/Family.js - COMPLETE FIXED VERSION
+// backend/src/models/Family.js - COMPLETE UPDATED VERSION
+// Key changes:
+// - totalGenerations calculated from actual tree
+// - vanshaGenerationNumber manual entry preserved
+// - familyHead supports both ObjectId and string (manual entry)
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
@@ -34,15 +38,22 @@ const familySchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    // ⭐ MANUAL ENTRY - user controls this value
     vanshaGenerationNumber: {
       type: String,
       trim: true,
       index: true,
     },
+    // ⭐ Family Head - can be ObjectId OR manual text
     familyHead: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Member',
       index: true,
+    },
+    // ⭐ NEW: Manual family head name (when not in DB)
+    familyHeadName: {
+      type: String,
+      trim: true,
     },
     clan: {
       type: String,
@@ -64,6 +75,7 @@ const familySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // ⭐ CALCULATED from actual tree - not manually entered
     totalGenerations: {
       type: Number,
       default: 0,
@@ -107,6 +119,7 @@ familySchema.index({ familyName: 'text' });
 familySchema.index({ status: 1 });
 familySchema.index({ clan: 1 });
 familySchema.index({ houseIdentifier: 1 });
+familySchema.index({ vanshaGenerationNumber: 1 });
 
 // Virtual populate: Family -> Members
 familySchema.virtual('members', {
@@ -118,7 +131,9 @@ familySchema.virtual('members', {
 familySchema.set('toJSON', { virtuals: true });
 familySchema.set('toObject', { virtuals: true });
 
-// ✅ ROBUST: Auto-generate familyNumber and houseIdentifier with duplicate prevention
+// ============================================================
+// PRE-SAVE: Auto-generate familyNumber and houseIdentifier
+// ============================================================
 familySchema.pre('save', async function() {
   if (this.isNew && !this.familyNumber) {
     const lastFamily = await this.constructor
@@ -131,7 +146,7 @@ familySchema.pre('save', async function() {
     console.log(`📝 Auto-generated familyNumber: ${this.familyNumber} for house: ${this.house}`);
   }
 
-  // ✅ Auto-generate houseIdentifier (S1, S2, S3, ...)
+  // Auto-generate houseIdentifier (S1, S2, S3, ...)
   if (this.isNew && !this.houseIdentifier) {
     const lastFamily = await this.constructor
       .findOne()
@@ -147,5 +162,29 @@ familySchema.pre('save', async function() {
     console.log(`📝 Auto-generated houseIdentifier: ${this.houseIdentifier}`);
   }
 });
+
+// ============================================================
+// METHOD: Recalculate totalGenerations from members
+// ============================================================
+familySchema.methods.recalculateGenerations = async function() {
+  const Member = mongoose.model('Member');
+  
+  const members = await Member.find({ family: this._id })
+    .select('generation generationMode')
+    .lean();
+
+  if (members.length === 0) {
+    this.totalGenerations = 0;
+  } else {
+    // Use the maximum effective generation
+    const maxGen = Math.max(
+      ...members.map(m => m.generation || 1)
+    );
+    this.totalGenerations = maxGen;
+  }
+
+  await this.save();
+  return this.totalGenerations;
+};
 
 export default mongoose.model('Family', familySchema);
